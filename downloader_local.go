@@ -11,7 +11,7 @@ type localDownloader struct {
 
 var Local = "local"
 
-func LocalDownloader(setting Setting) Downloader {
+func newLocalDownloader(setting Setting) Downloader {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &localDownloader{
@@ -28,21 +28,21 @@ func (dl *localDownloader) Download(entry Entry) error {
 	return nil
 }
 
-func (dl *localDownloader) Resume(id string) error {
+func (dl *localDownloader) Resume(entry Entry) error {
 	//TODO: implement resume
 	return nil
 }
 
-func (dl *localDownloader) Restart(id string) error {
+func (dl *localDownloader) Restart(entry Entry) error {
 	//TODO: implement restart
 	return nil
 }
 
-func (dl *localDownloader) Stop(id string) error {
+func (dl *localDownloader) Stop(entry Entry) error {
 	dl.cancel()
 	return nil
 }
 
 func init() {
-	RegisterDownloader(Local, LocalDownloader)
+	RegisterDownloader(Local, newLocalDownloader)
 }

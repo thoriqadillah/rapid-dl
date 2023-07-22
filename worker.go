@@ -25,7 +25,7 @@ type worker struct {
 var errPoolsize = fmt.Errorf("worker pool can't be less than 1")
 var errJobsize = fmt.Errorf("job size can't be negative")
 
-func New(ctx context.Context, poolsize int, amount ...int) (Pool, error) {
+func NewWorker(ctx context.Context, poolsize int, amount ...int) (Pool, error) {
 	if poolsize <= 0 {
 		return nil, errPoolsize
 	}

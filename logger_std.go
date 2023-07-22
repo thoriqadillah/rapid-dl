@@ -9,7 +9,7 @@ type stdLogger struct {
 var stdLog = "std"
 
 // StdLogger will log into std out
-func StdLogger(setting Setting) Logger {
+func newStdLogger(setting Setting) Logger {
 	return &stdLogger{
 		setting: setting,
 	}
@@ -20,5 +20,5 @@ func (l *stdLogger) Print(args ...interface{}) {
 }
 
 func init() {
-	RegisterLogger(stdLog, StdLogger)
+	RegisterLogger(stdLog, newStdLogger)
 }
