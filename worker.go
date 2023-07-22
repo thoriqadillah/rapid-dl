@@ -10,7 +10,6 @@ import (
 type Pool interface {
 	Start()
 	Stop()
-	Cancel()
 	Add(job Job)
 }
 
@@ -21,13 +20,12 @@ type worker struct {
 	stop     sync.Once
 	quit     chan struct{}
 	ctx      context.Context
-	cancel   context.CancelFunc
 }
 
 var errPoolsize = fmt.Errorf("worker pool can't be less than 1")
 var errJobsize = fmt.Errorf("job size can't be negative")
 
-func New(poolsize int, amount ...int) (Pool, error) {
+func New(ctx context.Context, poolsize int, amount ...int) (Pool, error) {
 	if poolsize <= 0 {
 		return nil, errPoolsize
 	}
@@ -41,7 +39,6 @@ func New(poolsize int, amount ...int) (Pool, error) {
 		return nil, errJobsize
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	return &worker{
 		poolsize: poolsize,
 		jobs:     make(chan Job, jobsize),
@@ -49,7 +46,6 @@ func New(poolsize int, amount ...int) (Pool, error) {
 		stop:     sync.Once{},
 		quit:     make(chan struct{}),
 		ctx:      ctx,
-		cancel:   cancel,
 	}, nil
 }
 
@@ -90,10 +86,6 @@ func (w *worker) Add(job Job) {
 	case w.jobs <- job:
 	case <-w.quit:
 	}
-}
-
-func (w *worker) Cancel() {
-	w.cancel()
 }
 
 func (w *worker) Stop() {

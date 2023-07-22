@@ -8,20 +8,22 @@ import (
 	"time"
 )
 
+var ctx = context.Background()
+
 func TestNewWorker(t *testing.T) {
-	if _, err := New(0, 0); err == nil {
+	if _, err := New(ctx, 0, 0); err == nil {
 		t.Fatalf("expected error when creating 0 worker, got %v", err)
 	}
 
-	if _, err := New(-1, 0); err == nil {
+	if _, err := New(ctx, -1, 0); err == nil {
 		t.Fatalf("expected error when creating -1 worker, got %v", err)
 	}
 
-	if _, err := New(1, -1); err == nil {
+	if _, err := New(ctx, 1, -1); err == nil {
 		t.Fatalf("expected error when creating -1 channel, got %v", err)
 	}
 
-	worker, err := New(5, 0)
+	worker, err := New(ctx, 5, 0)
 	if worker == nil {
 		t.Fatalf("worker returned nil with valid input")
 	}
@@ -32,7 +34,7 @@ func TestNewWorker(t *testing.T) {
 }
 
 func TestMultipleStartAndStop(t *testing.T) {
-	worker, err := New(5, 0)
+	worker, err := New(ctx, 5, 0)
 	if err != nil {
 		t.Fatalf("expected no error when creating valid worker, got %v", err)
 	}
@@ -105,7 +107,7 @@ func TestWorkerPool_Work(t *testing.T) {
 		jobs = append(jobs, newTestJob(nil, false, wg))
 	}
 
-	worker, err := New(5, len(jobs))
+	worker, err := New(ctx, 5, len(jobs))
 	if err != nil {
 		t.Fatal("error making worker pool:", err)
 	}
@@ -126,7 +128,7 @@ func TestWorkerPool_Work(t *testing.T) {
 }
 
 func TestWorkerPool_BlockedAddWorkReleaseAfterStop(t *testing.T) {
-	p, err := New(1, 0)
+	p, err := New(ctx, 1, 0)
 	if err != nil {
 		t.Fatal("error making worker pool:", err)
 	}
