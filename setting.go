@@ -10,6 +10,7 @@ type Setting interface {
 	DataLocation() string
 	MaxConcurrentDownload() int
 	MaxRetry() int
+	LoggerProvider() string
 }
 
 type setting struct {
@@ -17,6 +18,7 @@ type setting struct {
 	dataLocation          string
 	maxConcurrentDownload int
 	maxRetry              int
+	loggerProvider        string
 }
 
 func DefaultSetting() Setting {
@@ -31,6 +33,7 @@ func DefaultSetting() Setting {
 		dataLocation:          data,
 		maxConcurrentDownload: 4,
 		maxRetry:              3,
+		loggerProvider:        stdLog,
 	}
 }
 
@@ -48,4 +51,8 @@ func (s *setting) MaxConcurrentDownload() int {
 
 func (s *setting) MaxRetry() int {
 	return s.maxRetry
+}
+
+func (s *setting) LoggerProvider() string {
+	return s.loggerProvider
 }
