@@ -16,7 +16,7 @@ func StdLogger(setting Setting) Logger {
 }
 
 func (l *stdLogger) Print(args ...interface{}) {
-	log.Println(args)
+	log.Println(args...)
 }
 
 func init() {
