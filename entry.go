@@ -6,7 +6,6 @@ import (
 	"mime"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -33,14 +32,6 @@ type entry struct {
 	logger   Logger
 	chunkLen int
 }
-
-var (
-	imagetype      = `^.*.(jpg|jpeg|png|gif|svg|bmp)$`
-	videotype      = `^.*\.(mp4|mov|avi|mkv|wmv|flv|webm|mpeg|mpg|3gp|m4v|m4a)$`
-	audiotype      = `^.*.(mp3|wav|flac|aac|ogg|opus)$`
-	documenttype   = `^.*.(doc|docx|pdf|txt|ppt|pptx|xls|xlsx|odt|ods|odp|odg|odf|rtf|tex|texi|texinfo|wpd|wps|wpg|wks|wqd|wqx|w)$`
-	compressedtype = `^.*.(zip|rar|7z|tar|gz|bz2|tgz|tbz2|xz|txz|zst|zstd)$`
-)
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const (
@@ -69,26 +60,6 @@ func randID(n int) string {
 	}
 
 	return sb.String()
-}
-
-func filetype(name string) string {
-	if match, _ := regexp.MatchString(imagetype, name); match {
-		return "image"
-	}
-	if match, _ := regexp.MatchString(videotype, name); match {
-		return "video"
-	}
-	if match, _ := regexp.MatchString(audiotype, name); match {
-		return "audio"
-	}
-	if match, _ := regexp.MatchString(documenttype, name); match {
-		return "document"
-	}
-	if match, _ := regexp.MatchString(compressedtype, name); match {
-		return "compressed"
-	}
-
-	return "other"
 }
 
 func filename(r *http.Response) string {
@@ -139,7 +110,7 @@ func Fetch(url string, setting Setting) (Entry, error) {
 
 	filename := filename(req)
 	location := filepath.Join(setting.DownloadLocation(), filename)
-	filetype := filetype(filename)
+	filetype := Filetype(filename)
 	chunklen := calculatePartition(req.ContentLength, setting)
 
 	return &entry{
