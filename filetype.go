@@ -24,9 +24,15 @@ func compressedtype() string {
 	return `^.*.(zip|rar|7z|tar|gz|bz2|tgz|tbz2|xz|txz|zst|zstd)$`
 }
 
-var filetypeMap = make(map[string]TypeExpression)
+var filetypeMap = map[string]TypeExpression{
+	"Audio":      audiotype,
+	"Video":      videotype,
+	"Image":      imagetype,
+	"Compressed": compressedtype,
+	"Document":   documenttype,
+}
 
-func Filetype(filename string) string {
+func filetype(filename string) string {
 	for name, expr := range filetypeMap {
 		if match, _ := regexp.MatchString(expr(), filename); match {
 			return name
@@ -38,12 +44,4 @@ func Filetype(filename string) string {
 
 func RegisterFiletype(name string, expr TypeExpression) {
 	filetypeMap[name] = expr
-}
-
-func init() {
-	RegisterFiletype("Image", imagetype)
-	RegisterFiletype("Video", videotype)
-	RegisterFiletype("Audio", audiotype)
-	RegisterFiletype("Compressed", compressedtype)
-	RegisterFiletype("Document", documenttype)
 }

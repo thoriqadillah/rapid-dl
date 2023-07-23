@@ -6,21 +6,28 @@ import (
 	"sync"
 )
 
-type Pool interface {
-	Start()
-	Stop()
-	Add(job Job)
-}
+type (
+	Job interface {
+		Execute(ctx context.Context) error
+		OnError(ctx context.Context, err error)
+	}
 
-type worker struct {
-	poolsize int
-	jobs     chan Job
-	start    sync.Once
-	stop     sync.Once
-	quit     chan struct{}
-	ctx      context.Context
-	logger   Logger
-}
+	Pool interface {
+		Start()
+		Stop()
+		Add(job Job)
+	}
+
+	worker struct {
+		poolsize int
+		jobs     chan Job
+		start    sync.Once
+		stop     sync.Once
+		quit     chan struct{}
+		ctx      context.Context
+		logger   Logger
+	}
+)
 
 var errPoolsize = fmt.Errorf("worker pool can't be less than 1")
 var errJobsize = fmt.Errorf("job size can't be negative")

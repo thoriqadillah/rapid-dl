@@ -110,7 +110,7 @@ func Fetch(url string, setting Setting) (Entry, error) {
 
 	filename := filename(req)
 	location := filepath.Join(setting.DownloadLocation(), filename)
-	filetype := Filetype(filename)
+	filetype := filetype(filename)
 	chunklen := calculatePartition(req.ContentLength, setting)
 
 	return &entry{

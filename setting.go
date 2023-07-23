@@ -5,38 +5,40 @@ import (
 	"path/filepath"
 )
 
-type Setting interface {
-	// location where the download will be placed
-	DownloadLocation() string
+type (
+	Setting interface {
+		// location where the download will be placed
+		DownloadLocation() string
 
-	// location where the data for this application will be stored
-	DataLocation() string
+		// location where the data for this application will be stored
+		DataLocation() string
 
-	// max number of file will be downloaded at the same time
-	MaxConcurrentDownload() int
+		// max number of file will be downloaded at the same time
+		MaxConcurrentDownload() int
 
-	// max retry will be executed when there is an error while downloading
-	MaxRetry() int
+		// max retry will be executed when there is an error while downloading
+		MaxRetry() int
 
-	// logger provider that will be used to log something, e.g file, std, etc
-	LoggerProvider() string
+		// logger provider that will be used to log something, e.g file, std, etc
+		LoggerProvider() string
 
-	// pool size that used for worker to download something
-	Poolsize() int
+		// pool size that used for worker to download something
+		Poolsize() int
 
-	// minimum size in MB for a chunk
-	MinChunkSize() int64
-}
+		// minimum size in MB for a chunk
+		MinChunkSize() int64
+	}
 
-type setting struct {
-	downloadLocation      string
-	dataLocation          string
-	maxConcurrentDownload int
-	maxRetry              int
-	loggerProvider        string
-	poolsize              int
-	minChunkSize          int64
-}
+	setting struct {
+		downloadLocation      string
+		dataLocation          string
+		maxConcurrentDownload int
+		maxRetry              int
+		loggerProvider        string
+		poolsize              int
+		minChunkSize          int64
+	}
+)
 
 func DefaultSetting() Setting {
 	home, _ := os.UserHomeDir()

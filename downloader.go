@@ -1,7 +1,6 @@
 package rapid
 
 type (
-
 	// Downloader is interface to perform a download, pause, resume, restart, and stop for certain download
 	Downloader interface {
 		Download(entry Entry) error
