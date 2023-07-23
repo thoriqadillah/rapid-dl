@@ -6,11 +6,26 @@ import (
 )
 
 type Setting interface {
+	// location where the download will be placed
 	DownloadLocation() string
+
+	// location where the data for this application will be stored
 	DataLocation() string
+
+	// max number of file will be downloaded at the same time
 	MaxConcurrentDownload() int
+
+	// max retry will be executed when there is an error while downloading
 	MaxRetry() int
+
+	// logger provider that will be used to log something, e.g file, std, etc
 	LoggerProvider() string
+
+	// pool size that used for worker to download something
+	Poolsize() int
+
+	// minimum size in MB for a chunk
+	MinChunkSize() int64
 }
 
 type setting struct {
@@ -19,14 +34,18 @@ type setting struct {
 	maxConcurrentDownload int
 	maxRetry              int
 	loggerProvider        string
+	poolsize              int
+	minChunkSize          int64
 }
 
 func DefaultSetting() Setting {
 	home, _ := os.UserHomeDir()
 
 	// location
-	data := filepath.Join(home, ".gown")
+	data := filepath.Join(home, ".rapid")
 	download := filepath.Join(home, "Downloads")
+
+	os.MkdirAll(data, os.ModePerm)
 
 	return &setting{
 		downloadLocation:      download,
@@ -34,11 +53,13 @@ func DefaultSetting() Setting {
 		maxConcurrentDownload: 4,
 		maxRetry:              3,
 		loggerProvider:        stdLog,
+		poolsize:              1,
+		minChunkSize:          1024 * 1024 * 5, // 5 MB
 	}
 }
 
 func (s *setting) DownloadLocation() string {
-	return s.dataLocation
+	return s.downloadLocation
 }
 
 func (s *setting) DataLocation() string {
@@ -55,4 +76,12 @@ func (s *setting) MaxRetry() int {
 
 func (s *setting) LoggerProvider() string {
 	return s.loggerProvider
+}
+
+func (s *setting) Poolsize() int {
+	return s.poolsize
+}
+
+func (s *setting) MinChunkSize() int64 {
+	return s.minChunkSize
 }

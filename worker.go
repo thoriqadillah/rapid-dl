@@ -3,7 +3,6 @@ package rapid
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 )
 
@@ -20,59 +19,56 @@ type worker struct {
 	stop     sync.Once
 	quit     chan struct{}
 	ctx      context.Context
+	logger   Logger
 }
 
 var errPoolsize = fmt.Errorf("worker pool can't be less than 1")
 var errJobsize = fmt.Errorf("job size can't be negative")
 
-func NewWorker(ctx context.Context, poolsize int, amount ...int) (Pool, error) {
+func NewWorker(ctx context.Context, poolsize int, amount int, setting Setting) (Pool, error) {
 	if poolsize <= 0 {
 		return nil, errPoolsize
 	}
 
-	jobsize := 0
-	if len(amount) > 0 {
-		jobsize = amount[0]
-	}
-
-	if jobsize < 0 {
+	if amount < 0 {
 		return nil, errJobsize
 	}
 
 	return &worker{
 		poolsize: poolsize,
-		jobs:     make(chan Job, jobsize),
+		jobs:     make(chan Job, amount),
 		start:    sync.Once{},
 		stop:     sync.Once{},
 		quit:     make(chan struct{}),
 		ctx:      ctx,
+		logger:   NewLogger(setting.LoggerProvider(), setting),
 	}, nil
 }
 
 func (w *worker) Start() {
 	w.start.Do(func() {
-		log.Println("Starting worker...")
+		w.logger.Print("Starting worker...")
 
 		for i := 0; i < w.poolsize; i++ {
 			go func(id int) {
-				log.Printf("Starting worker id: %d\n", id)
+				w.logger.Print("Starting worker id", id+1)
 
 				for {
 					select {
 					case <-w.quit:
-						log.Printf("Stopping worker id: %d with quit channel. Still waiting worker to finish...\n", id)
+						w.logger.Print("Stopping worker id", id+1, "with quit channel. Still waiting worker to finish...")
 						return
 					case <-w.ctx.Done():
-						log.Printf("Cancelling worker id: %d process...\n", id)
+						w.logger.Print("Cancelling worker id", id+1, "process...")
 						return
 					case job, ok := <-w.jobs:
 						if !ok {
-							log.Printf("Stopping worker id: %d with closed channel\n", id)
+							w.logger.Print("Stopping worker id", id+1, "with closed channel")
 							return
 						}
 
 						if err := job.Execute(w.ctx); err != nil {
-							job.OnError(err)
+							job.OnError(w.ctx, err)
 						}
 					}
 				}
@@ -90,7 +86,7 @@ func (w *worker) Add(job Job) {
 
 func (w *worker) Stop() {
 	w.stop.Do(func() {
-		log.Println("Stopping worker")
+		w.logger.Print("Stopping worker")
 		close(w.quit)
 	})
 }
