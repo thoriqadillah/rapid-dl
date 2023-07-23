@@ -2,17 +2,13 @@ package rapid
 
 import "log"
 
-type stdLogger struct {
-	setting Setting
-}
+type stdLogger struct{}
 
 var stdLog = "std"
 
 // StdLogger will log into std out
-func newStdLogger(setting Setting) Logger {
-	return &stdLogger{
-		setting: setting,
-	}
+func newStdLogger(_ Setting) Logger {
+	return &stdLogger{}
 }
 
 func (l *stdLogger) Print(args ...interface{}) {
