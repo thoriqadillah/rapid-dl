@@ -21,7 +21,7 @@ type localDownloader struct {
 	logger Logger
 }
 
-var Local = "local"
+var DownloaderLocal = "local"
 
 func newLocalDownloader(setting Setting) Downloader {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -163,5 +163,5 @@ func (dl *localDownloader) createFile(entry Entry) error {
 }
 
 func init() {
-	RegisterDownloader(Local, newLocalDownloader)
+	RegisterDownloader(DownloaderLocal, newLocalDownloader)
 }

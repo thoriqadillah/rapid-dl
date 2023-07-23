@@ -52,7 +52,7 @@ func DefaultSetting() Setting {
 		dataLocation:          data,
 		maxConcurrentDownload: 4,
 		maxRetry:              3,
-		loggerProvider:        stdLog,
+		loggerProvider:        LoggerStdOut,
 		poolsize:              1,
 		minChunkSize:          1024 * 1024 * 5, // 5 MB
 	}

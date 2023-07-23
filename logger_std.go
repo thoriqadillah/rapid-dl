@@ -4,7 +4,7 @@ import "log"
 
 type stdLogger struct{}
 
-var stdLog = "std"
+const LoggerStdOut = "stdout"
 
 // StdLogger will log into std out
 func newStdLogger(_ Setting) Logger {
@@ -16,5 +16,5 @@ func (l *stdLogger) Print(args ...interface{}) {
 }
 
 func init() {
-	RegisterLogger(stdLog, newStdLogger)
+	RegisterLogger(LoggerStdOut, newStdLogger)
 }

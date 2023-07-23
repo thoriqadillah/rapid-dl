@@ -14,7 +14,7 @@ func TestDownloadLocalSuccess(t *testing.T) {
 		t.Error("Error while fetching dummy pdf:", err.Error())
 	}
 
-	downloader := NewDownloader(Local, DefaultSetting())
+	downloader := NewDownloader(DownloaderLocal, DefaultSetting())
 	if err := downloader.Download(entry); err != nil {
 		t.Error("Error while downloading dummy pdf:", err.Error())
 	}
@@ -30,7 +30,7 @@ func TestHandleDuplicate(t *testing.T) {
 		t.Error("Error while fetching dummy pdf:", err.Error())
 	}
 
-	downloader := NewDownloader(Local, DefaultSetting())
+	downloader := NewDownloader(DownloaderLocal, DefaultSetting())
 	if err := downloader.Download(entry); err != nil {
 		t.Error("Error while downloading dummy pdf:", err.Error())
 	}
