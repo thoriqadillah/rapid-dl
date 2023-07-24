@@ -22,9 +22,6 @@ type (
 		// logger provider that will be used to log something, e.g file, std, etc
 		LoggerProvider() string
 
-		// pool size that used for worker to download something
-		Poolsize() int
-
 		// minimum size in MB for a chunk
 		MinChunkSize() int64
 	}
@@ -55,7 +52,6 @@ func DefaultSetting() Setting {
 		maxConcurrentDownload: 4,
 		maxRetry:              3,
 		loggerProvider:        LoggerStdOut,
-		poolsize:              1,
 		minChunkSize:          1024 * 1024 * 5, // 5 MB
 	}
 }
@@ -78,10 +74,6 @@ func (s *setting) MaxRetry() int {
 
 func (s *setting) LoggerProvider() string {
 	return s.loggerProvider
-}
-
-func (s *setting) Poolsize() int {
-	return s.poolsize
 }
 
 func (s *setting) MinChunkSize() int64 {

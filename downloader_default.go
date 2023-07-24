@@ -38,7 +38,7 @@ func newLocalDownloader(setting Setting) Downloader {
 func (dl *localDownloader) Download(entry Entry) error {
 	start := time.Now()
 
-	worker, err := NewWorker(dl.ctx, dl.Poolsize(), entry.ChunkLen(), dl.Setting)
+	worker, err := NewWorker(dl.ctx, entry.ChunkLen(), entry.ChunkLen(), dl.Setting)
 	if err != nil {
 		dl.logger.Print("Error while creating worker", err.Error())
 		return err
