@@ -1,5 +1,7 @@
 package rapid
 
+import "log"
+
 type (
 	// Downloader is interface to perform a download, pause, resume, restart, and stop for certain download
 	Downloader interface {
@@ -16,7 +18,12 @@ type (
 var downloadermap = make(map[string]DownloaderFunc)
 
 func NewDownloader(provider string, setting Setting) Downloader {
-	downloader := downloadermap[provider]
+	downloader, ok := downloadermap[provider]
+	if !ok {
+		log.Panicf("Provider %s is not implemented", provider)
+		return nil
+	}
+
 	return downloader(setting)
 }
 

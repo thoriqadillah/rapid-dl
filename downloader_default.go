@@ -47,6 +47,8 @@ func (dl *localDownloader) Download(entry Entry) error {
 	worker.Start()
 	defer worker.Stop()
 
+	// TODO: handle do not download in chunk in ChunkLen() is 1. Just direct download
+	// This is the possibility if the entry is unchunkable, less than min chunk size, or unresumable
 	chunks := make([]*chunk, entry.ChunkLen())
 	for i := 0; i < entry.ChunkLen(); i++ {
 		chunks[i] = newChunk(entry, i, dl.Setting, &wg)
@@ -101,17 +103,21 @@ func (dl *localDownloader) handleDuplicate(filename string) string {
 
 	prefix := regex.FindStringSubmatch(name)
 	if len(prefix) == 0 {
+		// add number before ext of a file if there is none
 		split := strings.Split(name, ".")
 		if len(split) > 2 {
 			split[len(split)-2] += " (1)"
 		} else {
 			split[0] += " (1)"
 		}
+
+		// re-check if the current name has duplication
 		name = strings.Join(split, ".")
 		name = dl.handleDuplicate(name)
 		return name
 	}
 
+	// if it's still has, add the number
 	name = strings.ReplaceAll(name, " "+prefix[0], "")
 	number, err := strconv.Atoi(prefix[1])
 	if err != nil {
@@ -123,14 +129,16 @@ func (dl *localDownloader) handleDuplicate(filename string) string {
 	} else {
 		split[0] += " (" + strconv.Itoa(number+1) + ")"
 	}
+
+	// re-check if the current name has duplication
 	name = strings.Join(split, ".")
 	name = dl.handleDuplicate(name)
 
 	return name
 }
 
+// createFile will combine chunks into single actual file
 func (dl *localDownloader) createFile(entry Entry) error {
-	//TODO: handle filename duplication
 	filename := filepath.Join(dl.DownloadLocation(), entry.Name())
 	filename = dl.handleDuplicate(filename)
 

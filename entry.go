@@ -89,7 +89,7 @@ func calculatePartition(size int64, setting Setting) int {
 	total := math.Log10(float64(size / (1024 * 1024)))
 	partsize := setting.MinChunkSize()
 
-	// dampening the total partition based on digit figures
+	// dampening the total partition based on digit figures, e.g 100 -> 3 digits
 	for i := 0; i < int(total); i++ {
 		partsize = int64(total) + 1
 	}
