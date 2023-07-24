@@ -56,6 +56,7 @@ func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chun
 }
 
 func (c *chunk) download(ctx context.Context) error {
+	defer c.wg.Done()
 	start := time.Now()
 
 	srcFile, err := c.getDownloadFile(ctx)
@@ -80,7 +81,6 @@ func (c *chunk) download(ctx context.Context) error {
 	elapsed := time.Since(start)
 	c.logger.Print("Chunk", c.index+1, "downloaded in", elapsed.Seconds())
 
-	c.wg.Done()
 	return nil
 }
 
@@ -89,23 +89,18 @@ func (c *chunk) Execute(ctx context.Context) error {
 }
 
 func (c *chunk) OnError(ctx context.Context, err error) {
-	defer c.wg.Done()
-	c.logger.Print("Error while downloading file:", err.Error(), ". Retrying...")
-
 	var e error
 	for i := 0; i < c.MaxRetry(); i++ {
+		c.wg.Add(1)
+		c.logger.Print("Error while downloading file:", err.Error(), ". Retrying...")
+
 		// TODO: retry and resume download from the last byte download
-		if e = c.download(ctx); e != nil {
-			continue
+		if e = c.download(ctx); e == nil {
+			return
 		}
-
-		e = nil
-		break
 	}
 
-	if e != nil {
-		c.logger.Print("Failed downloading file:", err.Error())
-	}
+	c.logger.Print("Failed downloading file:", err.Error())
 }
 
 func (c *chunk) onProgress(onprogress OnProgress) {
