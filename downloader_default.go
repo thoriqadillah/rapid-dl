@@ -16,9 +16,10 @@ import (
 // downloader that save the result into local file
 type localDownloader struct {
 	Setting
-	ctx    context.Context
-	cancel context.CancelFunc
-	logger Logger
+	ctx        context.Context
+	cancel     context.CancelFunc
+	logger     Logger
+	onprogress OnProgress
 }
 
 var DownloaderDefault = "default"
@@ -52,6 +53,10 @@ func (dl *localDownloader) Download(entry Entry) error {
 	chunks := make([]*chunk, entry.ChunkLen())
 	for i := 0; i < entry.ChunkLen(); i++ {
 		chunks[i] = newChunk(entry, i, dl.Setting, &wg)
+
+		if dl.onprogress != nil {
+			chunks[i].onProgress(dl.onprogress)
+		}
 	}
 
 	for _, chunk := range chunks {
@@ -88,7 +93,10 @@ func (dl *localDownloader) Stop(entry Entry) error {
 	return nil
 }
 
-//TODO: implement watcher
+// Watch will update the id, index, downloaded bytes, and progress in percent of chunks. Watch must be called before Download
+func (dl *localDownloader) Watch(update OnProgress) {
+	dl.onprogress = update
+}
 
 func (dl *localDownloader) handleDuplicate(filename string) string {
 	name := filename

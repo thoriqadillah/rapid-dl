@@ -11,16 +11,19 @@ import (
 	"time"
 )
 
-type chunk struct {
-	Entry
-	Setting
-	wg     *sync.WaitGroup
-	index  int
-	start  int64
-	end    int64
-	size   int64
-	logger Logger
-}
+type (
+	chunk struct {
+		Entry
+		Setting
+		wg         *sync.WaitGroup
+		index      int
+		start      int64
+		end        int64
+		size       int64
+		logger     Logger
+		onprogress OnProgress
+	}
+)
 
 func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chunk {
 	chunkSize := entry.Size() / int64(entry.ChunkLen())
@@ -40,14 +43,15 @@ func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chun
 	}
 
 	return &chunk{
-		Entry:   entry,
-		Setting: setting,
-		wg:      wg,
-		index:   index,
-		start:   start,
-		end:     end,
-		size:    chunkSize,
-		logger:  logger,
+		Entry:      entry,
+		Setting:    setting,
+		wg:         wg,
+		index:      index,
+		start:      start,
+		end:        end,
+		size:       chunkSize,
+		logger:     logger,
+		onprogress: nil,
 	}
 }
 
@@ -59,14 +63,14 @@ func (c *chunk) download(ctx context.Context) error {
 		c.logger.Print("Error fetching chunk file:", err.Error())
 		return err
 	}
+	defer srcFile.Close()
 
 	dstFile, err := c.getSaveFile()
 	if err != nil {
 		c.logger.Print("Error creating temp file for chunk:", err.Error())
 		return err
 	}
-
-	// TODO: implement watch or progress bar
+	defer dstFile.Close()
 
 	if _, err := io.Copy(dstFile, srcFile); err != nil {
 		c.logger.Print("Error while downloading chunk", err.Error())
@@ -104,6 +108,10 @@ func (c *chunk) OnError(ctx context.Context, err error) {
 	}
 }
 
+func (c *chunk) onProgress(onprogress OnProgress) {
+	c.onprogress = onprogress
+}
+
 func (c *chunk) getDownloadFile(ctx context.Context) (io.ReadCloser, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", c.URL(), nil)
 	if err != nil {
@@ -120,7 +128,17 @@ func (c *chunk) getDownloadFile(ctx context.Context) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	return res.Body, nil
+	progressBar := &progressBar{
+		onprogress: c.onprogress,
+		reader:     res.Body,
+		Entry:      c.Entry,
+		index:      c.index,
+		downloaded: 0,
+		progress:   0,
+		chunkSize:  c.size,
+	}
+
+	return progressBar, nil
 }
 
 func (c *chunk) getSaveFile() (io.WriteCloser, error) {

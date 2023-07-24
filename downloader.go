@@ -11,8 +11,14 @@ type (
 		Stop(entry Entry) error
 	}
 
+	Watcher interface {
+		Watch(update OnProgress)
+	}
+
 	// DownloaderFunc is an abstract for creating a Downloader
 	DownloaderFunc func(s Setting) Downloader
+
+	OnProgress func(...interface{})
 )
 
 var downloadermap = make(map[string]DownloaderFunc)
