@@ -130,3 +130,21 @@ func TestFiletypeCompressed(t *testing.T) {
 		})
 	}
 }
+
+func TestFiletypeOther(t *testing.T) {
+	testCases := []string{
+		"archive.psd",
+		"compressed.xxx",
+		"compressed_file.xyz",
+		"tarball.aaa",
+	}
+
+	for _, filename := range testCases {
+		t.Run(filename, func(t *testing.T) {
+			result := filetype(filename)
+			if result != "Other" {
+				t.Errorf("Expected filetype(%s) to be Other, but got %s", filename, result)
+			}
+		})
+	}
+}
