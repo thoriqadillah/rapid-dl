@@ -11,19 +11,54 @@ import (
 	"time"
 )
 
-type (
-	chunk struct {
-		Entry
-		Setting
-		wg         *sync.WaitGroup
-		index      int
-		start      int64
-		end        int64
-		size       int64
-		logger     Logger
-		onprogress OnProgress
+type progressBar struct {
+	Entry
+	onprogress OnProgress
+	reader     io.ReadCloser
+	index      int
+	downloaded int64
+	progress   float64
+	chunkSize  int64
+}
+
+func (r *progressBar) Read(payload []byte) (n int, err error) {
+	n, err = r.reader.Read(payload)
+	if err != nil {
+		return n, err
 	}
-)
+
+	r.downloaded += int64(n)
+	r.progress = float64(100 * r.downloaded / r.chunkSize)
+
+	if r.onprogress != nil {
+		r.onprogress(
+			r.ID(),
+			r.index,
+			r.downloaded,
+			r.progress,
+		)
+	}
+
+	return n, err
+}
+
+func (r *progressBar) Close() error {
+	return r.reader.Close()
+}
+
+type chunk struct {
+	Entry
+	Setting
+	wg         *sync.WaitGroup
+	index      int
+	start      int64
+	end        int64
+	size       int64
+	logger     Logger
+	onprogress OnProgress
+}
+
+var errCanceled = fmt.Errorf("context canceled")
 
 func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chunk {
 	chunkSize := entry.Size() / int64(entry.ChunkLen())
@@ -34,7 +69,7 @@ func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chun
 		end = entry.Size()
 	}
 
-	logger := NewLogger(setting.LoggerProvider(), setting)
+	logger := NewLogger(setting)
 
 	if chunkSize == -1 {
 		logger.Print("Downloading chunk", index+1, "with unknown size")
@@ -74,12 +109,12 @@ func (c *chunk) download(ctx context.Context) error {
 	defer dstFile.Close()
 
 	if _, err := io.Copy(dstFile, srcFile); err != nil {
-		c.logger.Print("Error while downloading chunk", err.Error())
+		c.logger.Print("Error while downloading chunk:", err.Error())
 		return err
 	}
 
 	elapsed := time.Since(start)
-	c.logger.Print("Chunk", c.index+1, "downloaded in", elapsed.Seconds())
+	c.logger.Print("Chunk", c.index+1, "downloaded in", elapsed.Seconds(), "s")
 
 	return nil
 }

@@ -1,6 +1,9 @@
 package rapid
 
-import "log"
+import (
+	"log"
+	"sync"
+)
 
 type (
 	Logger interface {
@@ -11,15 +14,24 @@ type (
 )
 
 var loggermap = make(map[string]LoggerFunc)
+var instance sync.Map
 
-func NewLogger(provider string, setting Setting) Logger {
-	logger, ok := loggermap[provider]
+func NewLogger(setting Setting) Logger {
+	val, ok := instance.Load(setting.LoggerProvider())
+	if ok {
+		return val.(Logger)
+	}
+
+	logger, ok := loggermap[setting.LoggerProvider()]
 	if !ok {
-		log.Panicf("Provider %s is not implemented", provider)
+		log.Panicf("Provider %s is not implemented", setting.LoggerProvider())
 		return nil
 	}
 
-	return logger(setting)
+	l := logger(setting)
+	instance.Store(setting.LoggerProvider(), l)
+
+	return l
 }
 
 func RegisterLogger(name string, impl LoggerFunc) {

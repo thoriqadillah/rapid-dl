@@ -48,7 +48,7 @@ func NewWorker(ctx context.Context, poolsize int, amount int, setting Setting) (
 		stop:     sync.Once{},
 		quit:     make(chan struct{}),
 		ctx:      ctx,
-		logger:   NewLogger(setting.LoggerProvider(), setting),
+		logger:   NewLogger(setting),
 	}, nil
 }
 

@@ -32,7 +32,6 @@ type (
 		maxConcurrentDownload int
 		maxRetry              int
 		loggerProvider        string
-		poolsize              int
 		minChunkSize          int64
 	}
 )
