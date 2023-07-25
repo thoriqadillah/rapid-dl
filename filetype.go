@@ -1,6 +1,9 @@
 package rapid
 
-import "regexp"
+import (
+	"regexp"
+	"strings"
+)
 
 type TypeExpression func() string
 
@@ -34,7 +37,7 @@ var filetypeMap = map[string]TypeExpression{
 
 func filetype(filename string) string {
 	for name, expr := range filetypeMap {
-		if match, _ := regexp.MatchString(expr(), filename); match {
+		if match, _ := regexp.MatchString(expr(), strings.ToLower(filename)); match {
 			return name
 		}
 	}
