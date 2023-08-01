@@ -2,55 +2,32 @@ package rapid
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 )
 
-const dummypdf = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+const dummypdf = "https://file-examples.com/storage/fee3d1095964bab199aee29/2017/04/file_example_MP4_480_1_5MG.mp4"
 
 func TestDownloadLocalSuccess(t *testing.T) {
 	entry, err := Fetch(dummypdf, DefaultSetting())
 	if err != nil {
-		t.Error("Error while fetching dummy pdf:", err.Error())
+		t.Error("Error while fetching dummy video:", err.Error())
 	}
 
 	downloader := NewDownloader(DownloaderDefault, DefaultSetting())
 	if err := downloader.Download(entry); err != nil {
-		t.Error("Error while downloading dummy pdf:", err.Error())
+		t.Error("Error while downloading dummy video:", err.Error())
+	}
+
+	file, err := os.Stat(entry.Location())
+	if err != nil {
+		t.Error("Errow downloading file:", err.Error())
+	}
+
+	if file.Size() != entry.Size() {
+		t.Errorf("Download has different size. Expected %d, but got %d", entry.Size(), file.Size())
 	}
 
 	if err := os.Remove(entry.Location()); err != nil {
-		t.Error("Error removing dummy pdf:", err.Error())
+		t.Error("Error removing dummy video:", err.Error())
 	}
-}
-
-func TestHandleDuplicate(t *testing.T) {
-	entry, err := Fetch(dummypdf, DefaultSetting())
-	if err != nil {
-		t.Error("Error while fetching dummy pdf:", err.Error())
-	}
-
-	downloader := NewDownloader(DownloaderDefault, DefaultSetting())
-	if err := downloader.Download(entry); err != nil {
-		t.Error("Error while downloading dummy pdf:", err.Error())
-	}
-
-	if err := downloader.Download(entry); err != nil {
-		t.Error("Error while downloading dummy pdf:", err.Error())
-	}
-
-	home, _ := os.UserHomeDir()
-	dummy1 := filepath.Join(home, "Downloads", "dummy.pdf")
-	dummy2 := filepath.Join(home, "Downloads", "dummy (1).pdf")
-
-	for _, r := range []string{dummy1, dummy2} {
-		if _, err := os.Stat(r); err != nil {
-			t.Error("Download failed")
-		}
-
-		if err := os.Remove(r); err != nil {
-			t.Error("Error removing dummy pdf:", err.Error())
-		}
-	}
-
 }

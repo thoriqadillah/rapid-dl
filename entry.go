@@ -1,11 +1,15 @@
 package rapid
 
 import (
+	"context"
 	"math"
 	"math/rand"
 	"mime"
 	"net/http"
+	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -19,6 +23,8 @@ type Entry interface {
 	URL() string     // url which the entry downloaded from
 	Date() time.Time // date created
 	ChunkLen() int   // total chunks splitted into
+	Context() context.Context
+	Cancel() context.CancelFunc
 }
 
 type entry struct {
@@ -31,6 +37,8 @@ type entry struct {
 	date     time.Time
 	logger   Logger
 	chunkLen int
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -60,6 +68,53 @@ func randID(n int) string {
 	}
 
 	return sb.String()
+}
+
+func handleDuplicate(filename string) string {
+	name := filename
+	if _, err := os.Stat(filename); err != nil {
+		return name
+	}
+
+	regex, err := regexp.Compile(`\((.*?)\)`)
+	if err != nil { // if there is no number prefix
+		return name
+	}
+
+	prefix := regex.FindStringSubmatch(name)
+	if len(prefix) == 0 {
+		// add number before ext of a file if there is none
+		split := strings.Split(name, ".")
+		if len(split) > 2 {
+			split[len(split)-2] += " (1)"
+		} else {
+			split[0] += " (1)"
+		}
+
+		// re-check if the current name has duplication
+		name = strings.Join(split, ".")
+		name = handleDuplicate(name)
+		return name
+	}
+
+	// if it's still has, add the number
+	name = strings.ReplaceAll(name, " "+prefix[0], "")
+	number, err := strconv.Atoi(prefix[1])
+	if err != nil {
+		return name
+	}
+	split := strings.Split(name, ".")
+	if len(split) > 2 {
+		split[len(split)-2] += " (" + strconv.Itoa(number+1) + ")"
+	} else {
+		split[0] += " (" + strconv.Itoa(number+1) + ")"
+	}
+
+	// re-check if the current name has duplication
+	name = strings.Join(split, ".")
+	name = handleDuplicate(name)
+
+	return name
 }
 
 func filename(r *http.Response) string {
@@ -99,7 +154,7 @@ func calculatePartition(size int64, setting Setting) int {
 }
 
 func Fetch(url string, setting Setting) (Entry, error) {
-	logger := NewLogger(setting.LoggerProvider(), setting)
+	logger := NewLogger(setting)
 	logger.Print("Fetching url...")
 
 	req, err := http.Get(url)
@@ -108,10 +163,11 @@ func Fetch(url string, setting Setting) (Entry, error) {
 		return nil, err
 	}
 
-	filename := filename(req)
+	filename := handleDuplicate(filename(req))
 	location := filepath.Join(setting.DownloadLocation(), filename)
 	filetype := filetype(filename)
 	chunklen := calculatePartition(req.ContentLength, setting)
+	ctx, cancel := context.WithCancel(context.Background())
 
 	return &entry{
 		id:       randID(5),
@@ -123,6 +179,8 @@ func Fetch(url string, setting Setting) (Entry, error) {
 		date:     time.Now(),
 		logger:   logger,
 		chunkLen: chunklen,
+		ctx:      ctx,
+		cancel:   cancel,
 	}, nil
 }
 
@@ -156,4 +214,12 @@ func (e *entry) Date() time.Time {
 
 func (e *entry) ChunkLen() int {
 	return e.chunkLen
+}
+
+func (e *entry) Context() context.Context {
+	return e.ctx
+}
+
+func (e *entry) Cancel() context.CancelFunc {
+	return e.cancel
 }
