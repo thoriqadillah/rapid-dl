@@ -58,8 +58,6 @@ type chunk struct {
 	onprogress OnProgress
 }
 
-var errCanceled = fmt.Errorf("context canceled")
-
 func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chunk {
 	chunkSize := entry.Size() / int64(entry.ChunkLen())
 	start := int64(index * int(chunkSize))

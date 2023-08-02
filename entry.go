@@ -19,26 +19,28 @@ type Entry interface {
 	Name() string
 	Location() string
 	Size() int64
-	Type() string    // document, compressed, audio, video, image, other, etc
-	URL() string     // url which the entry downloaded from
-	Date() time.Time // date created
-	ChunkLen() int   // total chunks splitted into
+	Type() string  // document, compressed, audio, video, image, other, etc
+	URL() string   // url which the entry downloaded from
+	ChunkLen() int // total chunks splitted into
+	Resumable() bool
 	Context() context.Context
 	Cancel() context.CancelFunc
+	Refresh() error // refresh link if the link is expired
 }
 
 type entry struct {
-	id       string
-	name     string
-	location string
-	size     int64
-	filetype string
-	url      string
-	date     time.Time
-	logger   Logger
-	chunkLen int
-	ctx      context.Context
-	cancel   context.CancelFunc
+	id        string
+	name      string
+	location  string
+	size      int64
+	filetype  string
+	url       string
+	resumable bool
+	chunkLen  int
+	logger    Logger
+	date      time.Time
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -131,8 +133,7 @@ func filename(r *http.Response) string {
 		return urlPath[i+1:]
 	}
 
-	// If the filename cannot be determined from the header or URL, return an empty string
-	return "empty"
+	return "file"
 }
 
 // calculatePartition calculates how many chunks will be for certain size
@@ -208,12 +209,12 @@ func (e *entry) URL() string {
 	return e.url
 }
 
-func (e *entry) Date() time.Time {
-	return e.date
-}
-
 func (e *entry) ChunkLen() int {
 	return e.chunkLen
+}
+
+func (e *entry) Resumable() bool {
+	return e.resumable
 }
 
 func (e *entry) Context() context.Context {
@@ -222,4 +223,9 @@ func (e *entry) Context() context.Context {
 
 func (e *entry) Cancel() context.CancelFunc {
 	return e.cancel
+}
+
+func (e *entry) Refresh() error {
+	// TODO
+	return nil
 }

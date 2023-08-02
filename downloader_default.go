@@ -105,6 +105,8 @@ func (dl *localDownloader) createFile(entry Entry) error {
 		return err
 	}
 
+	// TODO: if chunk len is 1, then just rename the chunk into filename
+
 	for i := 0; i < entry.ChunkLen(); i++ {
 		tempFilename := filepath.Join(dl.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), i))
 		tmpFile, err := os.Open(tempFilename)
