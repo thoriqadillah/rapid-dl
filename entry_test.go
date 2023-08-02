@@ -92,4 +92,32 @@ func TestHandleDuplicateName(t *testing.T) {
 	}
 }
 
+func TestResumableSuccess(t *testing.T) {
+	link := "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+	res, err := http.Head(link)
+	if err != nil {
+		t.Error("Error while fetching link:", err.Error())
+	}
+
+	isResumable := resumable(res)
+	expected := true
+	if isResumable != expected {
+		t.Errorf("Resumable expected to be %v, but got %v", expected, isResumable)
+	}
+}
+
+func TestResumableError(t *testing.T) {
+	link := "https://google.com/s"
+	res, err := http.Head(link)
+	if err != nil {
+		t.Error("Error while fetching link:", err.Error())
+	}
+
+	isResumable := resumable(res)
+	expected := false
+	if isResumable != expected {
+		t.Errorf("Resumable expected to be %v, but got %v", expected, isResumable)
+	}
+}
+
 //TODO: add more test

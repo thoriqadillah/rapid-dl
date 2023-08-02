@@ -119,6 +119,11 @@ func handleDuplicate(filename string) string {
 	return name
 }
 
+func resumable(r *http.Response) bool {
+	acceptRanges := r.Header.Get("Accept-Ranges")
+	return acceptRanges != "" || acceptRanges == "bytes"
+}
+
 func filename(r *http.Response) string {
 	disposition := r.Header.Get("Content-Disposition")
 	_, params, _ := mime.ParseMediaType(disposition)
@@ -138,6 +143,10 @@ func filename(r *http.Response) string {
 
 // calculatePartition calculates how many chunks will be for certain size
 func calculatePartition(size int64, setting Setting) int {
+	if size == -1 {
+		return -1
+	}
+
 	if size < setting.MinChunkSize() {
 		return 1
 	}
@@ -164,6 +173,7 @@ func Fetch(url string, setting Setting) (Entry, error) {
 		return nil, err
 	}
 
+	resumable := resumable(req)
 	filename := handleDuplicate(filename(req))
 	location := filepath.Join(setting.DownloadLocation(), filename)
 	filetype := filetype(filename)
@@ -171,17 +181,18 @@ func Fetch(url string, setting Setting) (Entry, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &entry{
-		id:       randID(5),
-		name:     filename,
-		location: location,
-		filetype: filetype,
-		url:      req.Request.URL.String(),
-		size:     req.ContentLength,
-		date:     time.Now(),
-		logger:   logger,
-		chunkLen: chunklen,
-		ctx:      ctx,
-		cancel:   cancel,
+		id:        randID(5),
+		name:      filename,
+		location:  location,
+		filetype:  filetype,
+		url:       req.Request.URL.String(),
+		size:      req.ContentLength,
+		date:      time.Now(),
+		logger:    logger,
+		chunkLen:  chunklen,
+		ctx:       ctx,
+		cancel:    cancel,
+		resumable: resumable,
 	}, nil
 }
 

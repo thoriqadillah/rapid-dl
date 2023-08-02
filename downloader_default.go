@@ -70,9 +70,16 @@ func (dl *localDownloader) Download(entry Entry) error {
 
 func (dl *localDownloader) Resume(entry Entry) error {
 	dl.logger.Print("Resuming download", entry.Name(), "...")
-	//TODO: implement resume
-	//TODO: check if context is canceled
+
 	//TODO: check if link expired
+	//TODO: check if context is canceled
+
+	if !entry.Resumable() {
+		dl.logger.Print(entry.Name(), "is not resumable. Restarting...")
+		return dl.Restart(entry)
+	}
+
+	//TODO: implement resume
 	return nil
 }
 
