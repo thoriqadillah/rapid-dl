@@ -25,7 +25,8 @@ type Entry interface {
 	Resumable() bool
 	Context() context.Context
 	Cancel() context.CancelFunc
-	Refresh() error // refresh link if the link is expired
+	Expired() bool
+	Refresh() error
 }
 
 type entry struct {
@@ -38,7 +39,6 @@ type entry struct {
 	resumable bool
 	chunkLen  int
 	logger    Logger
-	date      time.Time
 	ctx       context.Context
 	cancel    context.CancelFunc
 }
@@ -144,7 +144,7 @@ func filename(r *http.Response) string {
 // calculatePartition calculates how many chunks will be for certain size
 func calculatePartition(size int64, setting Setting) int {
 	if size == -1 {
-		return -1
+		return 1
 	}
 
 	if size < setting.MinChunkSize() {
@@ -187,7 +187,6 @@ func Fetch(url string, setting Setting) (Entry, error) {
 		filetype:  filetype,
 		url:       req.Request.URL.String(),
 		size:      req.ContentLength,
-		date:      time.Now(),
 		logger:    logger,
 		chunkLen:  chunklen,
 		ctx:       ctx,
@@ -236,7 +235,23 @@ func (e *entry) Cancel() context.CancelFunc {
 	return e.cancel
 }
 
+func (e *entry) Expired() bool {
+	resp, err := http.Head(e.url)
+	if err != nil {
+		e.logger.Print("Error while checking url expiration:", err.Error())
+		return true
+	}
+
+	return resp.StatusCode != http.StatusOK && resp.Header.Get("Content-Length") == ""
+}
+
 func (e *entry) Refresh() error {
-	// TODO
+	if e.ctx.Err() != nil {
+		return nil
+	}
+
+	e.ctx, e.cancel = context.WithCancel(context.Background())
+	// TODO: do something else, such as refresh the link (future feature if browser extenstion is present)
+
 	return nil
 }

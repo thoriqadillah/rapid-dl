@@ -58,8 +58,7 @@ type chunk struct {
 	onprogress OnProgress
 }
 
-func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chunk {
-	chunkSize := entry.Size() / int64(entry.ChunkLen())
+func calculatePosition(entry Entry, chunkSize int64, index int) (int64, int64) {
 	start := int64(index * int(chunkSize))
 	end := start + (chunkSize - 1)
 
@@ -67,13 +66,15 @@ func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chun
 		end = entry.Size()
 	}
 
-	logger := NewLogger(setting)
+	return start, end
+}
 
-	if chunkSize == -1 {
-		logger.Print("Downloading chunk", index+1, "with unknown size")
-	} else {
-		logger.Print("Downloading chunk", index+1, "from", start, "to", end, fmt.Sprintf("(~%d MB)", (end-start)/(1024*1024)))
-	}
+func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chunk {
+	chunkSize := entry.Size() / int64(entry.ChunkLen()) // TODO: make this absolute
+	start, end := calculatePosition(entry, chunkSize, index)
+
+	logger := NewLogger(setting)
+	logger.Print("Downloading chunk", index+1, "from", start, "to", end, fmt.Sprintf("(~%d MB)", (end-start)/(1024*1024)))
 
 	return &chunk{
 		Entry:      entry,

@@ -38,8 +38,6 @@ func (dl *localDownloader) Download(entry Entry) error {
 	worker.Start()
 	defer worker.Stop()
 
-	// TODO: handle do not download in chunk in ChunkLen() is 1. Just direct download
-	// This is the possibility if the entry is unchunkable, less than min chunk size, or unresumable
 	chunks := make([]*chunk, entry.ChunkLen())
 	for i := 0; i < entry.ChunkLen(); i++ {
 		chunks[i] = newChunk(entry, i, dl.Setting, &wg)
@@ -68,15 +66,23 @@ func (dl *localDownloader) Download(entry Entry) error {
 	return nil
 }
 
+var errUrlExpired = fmt.Errorf("link is expired")
+
 func (dl *localDownloader) Resume(entry Entry) error {
 	dl.logger.Print("Resuming download", entry.Name(), "...")
 
-	//TODO: check if link expired
-	//TODO: check if context is canceled
+	if entry.Expired() {
+		return errUrlExpired
+	}
+
+	// check if context is canceled (download stoppped by user)
+	if err := entry.Refresh(); err != nil {
+		return err
+	}
 
 	if !entry.Resumable() {
 		dl.logger.Print(entry.Name(), "is not resumable. Restarting...")
-		return dl.Restart(entry)
+		return dl.Download(entry)
 	}
 
 	//TODO: implement resume
@@ -85,9 +91,17 @@ func (dl *localDownloader) Resume(entry Entry) error {
 
 func (dl *localDownloader) Restart(entry Entry) error {
 	dl.logger.Print("Restarting download", entry.Name(), "...")
-	//TODO: implement restart
-	//TODO: check if link expired
-	return nil
+
+	if entry.Expired() {
+		return errUrlExpired
+	}
+
+	// check if context is canceled (download stoppped by user)
+	if err := entry.Refresh(); err != nil {
+		return err
+	}
+
+	return dl.Download(entry)
 }
 
 func (dl *localDownloader) Stop(entry Entry) error {
@@ -112,7 +126,11 @@ func (dl *localDownloader) createFile(entry Entry) error {
 		return err
 	}
 
-	// TODO: if chunk len is 1, then just rename the chunk into filename
+	// if chunk len is 1, then just rename the chunk into entry filename
+	if entry.ChunkLen() == 1 {
+		chunkname := filepath.Join(dl.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), 0))
+		return os.Rename(chunkname, entry.Name())
+	}
 
 	for i := 0; i < entry.ChunkLen(); i++ {
 		tempFilename := filepath.Join(dl.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), i))
