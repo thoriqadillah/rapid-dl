@@ -8,7 +8,6 @@ import (
 )
 
 func TestFilename(t *testing.T) {
-	//TODO
 	link := "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
 	req, err := http.Get(link)
 	if err != nil {
@@ -118,6 +117,76 @@ func TestResumableError(t *testing.T) {
 	if isResumable != expected {
 		t.Errorf("Resumable expected to be %v, but got %v", expected, isResumable)
 	}
+
+	link = "https://cartographicperspectives.org/index.php/journal/article/view/cp13-full/pdf"
+	res, err = http.Head(link)
+	if err != nil {
+		t.Error("Error while fetching link:", err.Error())
+	}
+
+	isResumable = resumable(res)
+	expected = false
+	if isResumable != expected {
+		t.Errorf("Resumable expected to be %v, but got %v", expected, isResumable)
+	}
 }
 
-//TODO: add more test
+func TestCalculatePartitionOneChunkLen(t *testing.T) {
+	// 10 mb file, but has no header to get the desired data
+	link := "https://cartographicperspectives.org/index.php/journal/article/view/cp13-full/pdf"
+	entry, err := Fetch(link, DefaultSetting())
+	if err != nil {
+		t.Error("Error fetching url:", err.Error())
+	}
+
+	t.Error(entry)
+	if entry.ChunkLen() > 1 {
+		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
+	}
+}
+
+func TestCalculatePartitionMoreOneChunkLen(t *testing.T) {
+	// 100 mb file
+	link := "https://www.sampledocs.in/DownloadFiles/SampleFile?filename=sampledocs-100mb-pdf-file&ext=pdf"
+	entry, err := Fetch(link, DefaultSetting())
+	if err != nil {
+		t.Error("Error fetching url:", err.Error())
+	}
+
+	if entry.ChunkLen() == 1 {
+		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
+	}
+
+	// 1 gb file
+	link = "https://bit.ly/1GB-testfile"
+	entry, err = Fetch(link, DefaultSetting())
+	if err != nil {
+		t.Error("Error fetching url:", err.Error())
+	}
+
+	if entry.ChunkLen() == 1 {
+		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
+	}
+
+	// 10 mb file
+	link = "https://www.sampledocs.in/DownloadFiles/SampleFile?filename=SampleDocs-Test%20PDF%20File%20With%20Dummy%20Data%20For%20Testing&ext=pdf"
+	entry, err = Fetch(link, DefaultSetting())
+	if err != nil {
+		t.Error("Error fetching url:", err.Error())
+	}
+
+	if entry.ChunkLen() == 1 {
+		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
+	}
+
+	// 50 mb file
+	link = "https://link.testfile.org/PDF50MB"
+	entry, err = Fetch(link, DefaultSetting())
+	if err != nil {
+		t.Error("Error fetching url:", err.Error())
+	}
+
+	if entry.ChunkLen() == 1 {
+		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
+	}
+}

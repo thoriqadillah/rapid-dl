@@ -37,7 +37,12 @@ var filetypeMap = map[string]TypeExpression{
 
 func filetype(filename string) string {
 	for name, expr := range filetypeMap {
-		if match, _ := regexp.MatchString(expr(), strings.ToLower(filename)); match {
+		regex, err := regexp.Compile(expr())
+		if err != nil {
+			return "Other"
+		}
+
+		if match := regex.MatchString(strings.ToLower(filename)); match {
 			return name
 		}
 	}

@@ -26,8 +26,4 @@ func TestDownloadLocalSuccess(t *testing.T) {
 	if file.Size() != entry.Size() {
 		t.Errorf("Download has different size. Expected %d, but got %d", entry.Size(), file.Size())
 	}
-
-	if err := os.Remove(entry.Location()); err != nil {
-		t.Error("Error removing dummy video:", err.Error())
-	}
 }

@@ -80,13 +80,13 @@ func (dl *localDownloader) Resume(entry Entry) error {
 		return err
 	}
 
+	// basically, if it's not resumable we do nothing, because it is already handled by the chunk
+	// so we just perform download
 	if !entry.Resumable() {
 		dl.logger.Print(entry.Name(), "is not resumable. Restarting...")
-		return dl.Download(entry)
 	}
 
-	//TODO: implement resume
-	return nil
+	return dl.Download(entry)
 }
 
 func (dl *localDownloader) Restart(entry Entry) error {
@@ -129,7 +129,7 @@ func (dl *localDownloader) createFile(entry Entry) error {
 	// if chunk len is 1, then just rename the chunk into entry filename
 	if entry.ChunkLen() == 1 {
 		chunkname := filepath.Join(dl.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), 0))
-		return os.Rename(chunkname, entry.Name())
+		return os.Rename(chunkname, entry.Location())
 	}
 
 	for i := 0; i < entry.ChunkLen(); i++ {

@@ -1,7 +1,9 @@
 package rapid
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"math"
 	"math/rand"
 	"mime"
@@ -156,7 +158,7 @@ func calculatePartition(size int64, setting Setting) int {
 
 	// dampening the total partition based on digit figures, e.g 100 -> 3 digits
 	for i := 0; i < int(total); i++ {
-		partsize *= int64(total) + 1
+		partsize *= int64(total)
 	}
 
 	return int(size / partsize)
@@ -181,7 +183,7 @@ func Fetch(url string, setting Setting) (Entry, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &entry{
-		id:        randID(5),
+		id:        randID(10),
 		name:      filename,
 		location:  location,
 		filetype:  filetype,
@@ -254,4 +256,19 @@ func (e *entry) Refresh() error {
 	// TODO: do something else, such as refresh the link (future feature if browser extenstion is present)
 
 	return nil
+}
+
+func (e *entry) String() string {
+	var buffer bytes.Buffer
+
+	buffer.WriteString(fmt.Sprintf("ID: %v\n", e.id))
+	buffer.WriteString(fmt.Sprintf("Name: %v\n", e.name))
+	buffer.WriteString(fmt.Sprintf("Location: %v\n", e.location))
+	buffer.WriteString(fmt.Sprintf("Size: %v\n", e.size))
+	buffer.WriteString(fmt.Sprintf("Filetype: %v\n", e.filetype))
+	buffer.WriteString(fmt.Sprintf("URL: %v\n", e.url))
+	buffer.WriteString(fmt.Sprintf("Resumable: %v\n", e.resumable))
+	buffer.WriteString(fmt.Sprintf("ChunkLen: %v\n", e.chunkLen))
+
+	return buffer.String()
 }

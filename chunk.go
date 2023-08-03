@@ -69,12 +69,26 @@ func calculatePosition(entry Entry, chunkSize int64, index int) (int64, int64) {
 	return start, end
 }
 
+// TODO: test this
+func resumePosition(location string) int64 {
+	file, err := os.Stat(location)
+	if err != nil {
+		return 0
+	}
+
+	return file.Size()
+}
+
 func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chunk {
-	chunkSize := entry.Size() / int64(entry.ChunkLen()) // TODO: make this absolute
+	chunkSize := entry.Size() / int64(entry.ChunkLen())
 	start, end := calculatePosition(entry, chunkSize, index)
 
 	logger := NewLogger(setting)
 	logger.Print("Downloading chunk", index+1, "from", start, "to", end, fmt.Sprintf("(~%d MB)", (end-start)/(1024*1024)))
+
+	// make it auto resumable download if possible
+	chunkFile := filepath.Join(setting.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), index))
+	start += resumePosition(chunkFile)
 
 	return &chunk{
 		Entry:      entry,
@@ -128,7 +142,10 @@ func (c *chunk) OnError(ctx context.Context, err error) {
 		c.wg.Add(1)
 		c.logger.Print("Error while downloading file:", err.Error(), ". Retrying...")
 
-		// TODO: retry and resume download from the last byte download
+		//TODO: test this
+		chunkFile := filepath.Join(c.DownloadLocation(), fmt.Sprintf("%s-%d", c.ID(), c.index))
+		c.start += resumePosition(chunkFile)
+
 		if e = c.download(ctx); e == nil {
 			return
 		}

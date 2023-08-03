@@ -1,6 +1,8 @@
 package rapid
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestFiletypeDocument(t *testing.T) {
 	testCases := []string{
@@ -146,5 +148,15 @@ func TestFiletypeOther(t *testing.T) {
 				t.Errorf("Expected filetype(%s) to be Other, but got %s", filename, result)
 			}
 		})
+	}
+}
+
+func TestFiletypeError(t *testing.T) {
+	// link with bad header
+	link := "https://cartographicperspectives.org/index.php/journal/article/view/cp13-full/pdf"
+	entry, _ := Fetch(link, DefaultSetting())
+
+	if entry.Type() != "Other" {
+		t.Error("File type expected to be Other, but got", entry.Type())
 	}
 }
