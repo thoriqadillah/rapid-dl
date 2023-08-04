@@ -28,6 +28,10 @@ func newLocalDownloader(setting Setting) Downloader {
 func (dl *localDownloader) Download(entry Entry) error {
 	start := time.Now()
 
+	if entry.Expired() {
+		return errUrlExpired
+	}
+
 	worker, err := NewWorker(entry.Context(), entry.ChunkLen(), entry.ChunkLen(), dl.Setting)
 	if err != nil {
 		dl.logger.Print("Error while creating worker", err.Error())

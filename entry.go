@@ -244,7 +244,7 @@ func (e *entry) Expired() bool {
 		return true
 	}
 
-	return resp.StatusCode != http.StatusOK && resp.Header.Get("Content-Length") == ""
+	return resp.StatusCode != http.StatusOK && resp.ContentLength <= 0
 }
 
 func (e *entry) Refresh() error {
