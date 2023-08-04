@@ -269,6 +269,7 @@ func (e *entry) String() string {
 	buffer.WriteString(fmt.Sprintf("URL: %v\n", e.url))
 	buffer.WriteString(fmt.Sprintf("Resumable: %v\n", e.resumable))
 	buffer.WriteString(fmt.Sprintf("ChunkLen: %v\n", e.chunkLen))
+	buffer.WriteString(fmt.Sprintf("Expired: %v\n", e.Expired()))
 
 	return buffer.String()
 }
