@@ -151,7 +151,7 @@ func TestFiletypeOther(t *testing.T) {
 	}
 }
 
-func TestFiletypeError(t *testing.T) {
+func TestBadFiletypeSuccess(t *testing.T) {
 	// link with bad header
 	link := "https://cartographicperspectives.org/index.php/journal/article/view/cp13-full/pdf"
 	entry, _ := Fetch(link, DefaultSetting())

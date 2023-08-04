@@ -53,6 +53,19 @@ func TestFilename(t *testing.T) {
 	}
 }
 
+func TestBadFilename(t *testing.T) {
+	link := "https://cartographicperspectives.org/index.php/journal/article/view/cp13-full/pdf"
+	req, err := http.Get(link)
+	if err != nil {
+		t.Error("Error fetching link:", err.Error())
+	}
+
+	name := filename(req)
+	if name == "document.pdf" {
+		t.Errorf("Error fetching file name. Expected not to be document.pdf, but got %s", name)
+	}
+}
+
 func TestHandleDuplicateName(t *testing.T) {
 	home, _ := os.UserHomeDir()
 	name := filepath.Join(home, "Downloads", "test.pdf")
@@ -139,7 +152,6 @@ func TestCalculatePartitionOneChunkLen(t *testing.T) {
 		t.Error("Error fetching url:", err.Error())
 	}
 
-	t.Error(entry)
 	if entry.ChunkLen() > 1 {
 		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
 	}

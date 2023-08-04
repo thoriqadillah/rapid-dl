@@ -87,8 +87,10 @@ func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chun
 	logger.Print("Downloading chunk", index+1, "from", start, "to", end, fmt.Sprintf("(~%d MB)", (end-start)/(1024*1024)))
 
 	// make it auto resumable download if possible
-	chunkFile := filepath.Join(setting.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), index))
-	start += resumePosition(chunkFile)
+	if entry.Resumable() {
+		chunkFile := filepath.Join(setting.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), index))
+		start += resumePosition(chunkFile)
+	}
 
 	return &chunk{
 		Entry:      entry,
@@ -143,8 +145,10 @@ func (c *chunk) OnError(ctx context.Context, err error) {
 		c.logger.Print("Error while downloading file:", err.Error(), ". Retrying...")
 
 		//TODO: test this
-		chunkFile := filepath.Join(c.DownloadLocation(), fmt.Sprintf("%s-%d", c.ID(), c.index))
-		c.start += resumePosition(chunkFile)
+		if c.Resumable() {
+			chunkFile := filepath.Join(c.DownloadLocation(), fmt.Sprintf("%s-%d", c.ID(), c.index))
+			c.start += resumePosition(chunkFile)
+		}
 
 		if e = c.download(ctx); e == nil {
 			return
