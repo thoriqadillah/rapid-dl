@@ -34,7 +34,7 @@ func (dl *localDownloader) Download(entry Entry) error {
 
 	worker, err := NewWorker(entry.Context(), entry.ChunkLen(), entry.ChunkLen(), dl.Setting)
 	if err != nil {
-		dl.logger.Print("Error while creating worker", err.Error())
+		dl.logger.Print("Error creating worker", err.Error())
 		return err
 	}
 
@@ -60,12 +60,12 @@ func (dl *localDownloader) Download(entry Entry) error {
 
 	// combining file
 	if err := dl.createFile(entry); err != nil {
-		dl.logger.Print("Error while combining chunks:", err.Error())
+		dl.logger.Print("Error combining chunks:", err.Error())
 		return err
 	}
 
 	elapsed := time.Since(start)
-	dl.logger.Print(entry.Name(), "downloaded in", elapsed.Seconds(), "s")
+	dl.logger.Print(entry.Name(), "downloaded  in", elapsed.Seconds(), "s")
 
 	return nil
 }
@@ -134,7 +134,7 @@ func (dl *localDownloader) createFile(entry Entry) error {
 
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		dl.logger.Print("Error while creating downloaded file:", err.Error())
+		dl.logger.Print("Error creating downloaded file:", err.Error())
 		return err
 	}
 
@@ -148,17 +148,17 @@ func (dl *localDownloader) createFile(entry Entry) error {
 		tempFilename := filepath.Join(dl.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), i))
 		tmpFile, err := os.Open(tempFilename)
 		if err != nil {
-			dl.logger.Print("Error while opening downloaded chunk file:", err.Error())
+			dl.logger.Print("Error opening downloaded chunk file:", err.Error())
 			return err
 		}
 
 		if _, err := io.Copy(file, tmpFile); err != nil {
-			dl.logger.Print("Error while copying chunk file into actual file:", err.Error())
+			dl.logger.Print("Error copying chunk file into actual file:", err.Error())
 			return err
 		}
 
 		if err := os.Remove(tempFilename); err != nil {
-			dl.logger.Print("Error while removing temp file:", err.Error())
+			dl.logger.Print("Error removing temp file:", err.Error())
 			return err
 		}
 	}

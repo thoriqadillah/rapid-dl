@@ -8,7 +8,7 @@ func TestChunkRangeOneChunkLen(t *testing.T) {
 	link := "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
 	entry, err := Fetch(link, DefaultSetting())
 	if err != nil {
-		t.Error("Error while fetching url:", err.Error())
+		t.Error("Error fetching url:", err.Error())
 	}
 
 	chunkSize := entry.Size() / int64(entry.ChunkLen())

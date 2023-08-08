@@ -171,7 +171,7 @@ func Fetch(url string, setting Setting) (Entry, error) {
 
 	req, err := http.Get(url)
 	if err != nil {
-		logger.Print("Error while fetching url", err.Error())
+		logger.Print("Error fetching url", err.Error())
 		return nil, err
 	}
 
@@ -179,8 +179,12 @@ func Fetch(url string, setting Setting) (Entry, error) {
 	filename := handleDuplicate(filename(req))
 	location := filepath.Join(setting.DownloadLocation(), filename)
 	filetype := filetype(filename)
-	chunklen := calculatePartition(req.ContentLength, setting)
 	ctx, cancel := context.WithCancel(context.Background())
+	chunklen := calculatePartition(req.ContentLength, setting)
+
+	if !resumable {
+		chunklen = 1
+	}
 
 	return &entry{
 		id:        randID(10),
@@ -240,7 +244,7 @@ func (e *entry) Cancel() context.CancelFunc {
 func (e *entry) Expired() bool {
 	resp, err := http.Head(e.url)
 	if err != nil {
-		e.logger.Print("Error while checking url expiration:", err.Error())
+		e.logger.Print("Error checking url expiration:", err.Error())
 		return true
 	}
 

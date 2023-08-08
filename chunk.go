@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -86,12 +87,6 @@ func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chun
 	logger := NewLogger(setting)
 	logger.Print("Downloading chunk", index+1, "from", start, "to", end, fmt.Sprintf("(~%d MB)", (end-start)/(1024*1024)))
 
-	// make it auto resumable download if possible
-	if entry.Resumable() {
-		chunkFile := filepath.Join(setting.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), index))
-		start += resumePosition(chunkFile)
-	}
-
 	return &chunk{
 		Entry:      entry,
 		Setting:    setting,
@@ -109,12 +104,14 @@ func (c *chunk) download(ctx context.Context) error {
 	defer c.wg.Done()
 	start := time.Now()
 
+	log.Println("a")
 	srcFile, err := c.getDownloadFile(ctx)
 	if err != nil {
 		c.logger.Print("Error fetching chunk file:", err.Error())
 		return err
 	}
 	defer srcFile.Close()
+	log.Println("b")
 
 	dstFile, err := c.getSaveFile()
 	if err != nil {
@@ -122,11 +119,13 @@ func (c *chunk) download(ctx context.Context) error {
 		return err
 	}
 	defer dstFile.Close()
+	log.Println("c")
 
 	if _, err := io.Copy(dstFile, srcFile); err != nil {
-		c.logger.Print("Error while downloading chunk:", err.Error())
+		c.logger.Print("Error downloading chunk:", err.Error())
 		return err
 	}
+	log.Println("d")
 
 	elapsed := time.Since(start)
 	c.logger.Print("Chunk", c.index+1, "downloaded in", elapsed.Seconds(), "s")
@@ -142,7 +141,7 @@ func (c *chunk) OnError(ctx context.Context, err error) {
 	var e error
 	for i := 0; i < c.MaxRetry(); i++ {
 		c.wg.Add(1)
-		c.logger.Print("Error while downloading file:", err.Error(), ". Retrying...")
+		c.logger.Print("Error downloading file:", err.Error(), ". Retrying...")
 
 		//TODO: test this
 		if c.Resumable() {
@@ -165,7 +164,7 @@ func (c *chunk) onProgress(onprogress OnProgress) {
 func (c *chunk) getDownloadFile(ctx context.Context) (io.ReadCloser, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", c.URL(), nil)
 	if err != nil {
-		c.logger.Print("Error while creating chunk request:", err.Error())
+		c.logger.Print("Error creating chunk request:", err.Error())
 		return nil, err
 	}
 
@@ -174,7 +173,7 @@ func (c *chunk) getDownloadFile(ctx context.Context) (io.ReadCloser, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		c.logger.Print("Error while fething chunk body:", err.Error())
+		c.logger.Print("Error fething chunk body:", err.Error())
 		return nil, err
 	}
 

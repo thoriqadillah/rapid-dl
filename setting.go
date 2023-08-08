@@ -16,7 +16,7 @@ type (
 		// max number of file will be downloaded at the same time
 		MaxConcurrentDownload() int
 
-		// max retry will be executed when there is an error while downloading
+		// max retry will be executed when there is an Error downloading
 		MaxRetry() int
 
 		// logger provider that will be used to log something, e.g file, std, etc

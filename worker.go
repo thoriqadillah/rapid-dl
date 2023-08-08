@@ -63,10 +63,7 @@ func (w *worker) Start() {
 				for {
 					select {
 					case <-w.quit:
-						w.logger.Print("Stopping worker id", id+1, "with quit channel. Still waiting worker to finish...")
-						return
-					case <-w.ctx.Done():
-						w.logger.Print("Cancelling worker id", id+1, "process...")
+						w.logger.Print("Stopping worker id", id+1, "with quit channel")
 						return
 					case job, ok := <-w.jobs:
 						if !ok {

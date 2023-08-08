@@ -108,7 +108,7 @@ func TestResumableSuccess(t *testing.T) {
 	link := "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
 	res, err := http.Head(link)
 	if err != nil {
-		t.Error("Error while fetching link:", err.Error())
+		t.Error("Error fetching link:", err.Error())
 	}
 
 	isResumable := resumable(res)
@@ -122,7 +122,7 @@ func TestResumableError(t *testing.T) {
 	link := "https://google.com/s"
 	res, err := http.Head(link)
 	if err != nil {
-		t.Error("Error while fetching link:", err.Error())
+		t.Error("Error fetching link:", err.Error())
 	}
 
 	isResumable := resumable(res)
@@ -134,7 +134,7 @@ func TestResumableError(t *testing.T) {
 	link = "https://cartographicperspectives.org/index.php/journal/article/view/cp13-full/pdf"
 	res, err = http.Head(link)
 	if err != nil {
-		t.Error("Error while fetching link:", err.Error())
+		t.Error("Error fetching link:", err.Error())
 	}
 
 	isResumable = resumable(res)
