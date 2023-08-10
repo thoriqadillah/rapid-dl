@@ -26,7 +26,7 @@ type Entry interface {
 	ChunkLen() int // total chunks splitted into
 	Resumable() bool
 	Context() context.Context
-	Cancel() context.CancelFunc
+	Cancel()
 	Expired() bool
 	Refresh() error
 }
@@ -237,8 +237,8 @@ func (e *entry) Context() context.Context {
 	return e.ctx
 }
 
-func (e *entry) Cancel() context.CancelFunc {
-	return e.cancel
+func (e *entry) Cancel() {
+	e.cancel()
 }
 
 func (e *entry) Expired() bool {
@@ -252,10 +252,6 @@ func (e *entry) Expired() bool {
 }
 
 func (e *entry) Refresh() error {
-	if e.ctx.Err() != nil {
-		return nil
-	}
-
 	e.ctx, e.cancel = context.WithCancel(context.Background())
 	// TODO: do something else, such as refresh the link (future feature if browser extenstion is present)
 

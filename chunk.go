@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -51,6 +50,7 @@ type chunk struct {
 	Entry
 	Setting
 	wg         *sync.WaitGroup
+	path       string
 	index      int
 	start      int64
 	end        int64
@@ -77,7 +77,12 @@ func resumePosition(location string) int64 {
 		return 0
 	}
 
-	return file.Size()
+	resumePos := file.Size()
+	if err := os.Truncate(location, resumePos); err != nil {
+		return 0
+	}
+
+	return resumePos
 }
 
 func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chunk {
@@ -85,9 +90,9 @@ func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chun
 	start, end := calculatePosition(entry, chunkSize, index)
 
 	logger := NewLogger(setting)
-	logger.Print("Downloading chunk", index+1, "from", start, "to", end, fmt.Sprintf("(~%d MB)", (end-start)/(1024*1024)))
 
 	return &chunk{
+		path:       filepath.Join(setting.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), index)),
 		Entry:      entry,
 		Setting:    setting,
 		wg:         wg,
@@ -101,17 +106,21 @@ func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chun
 }
 
 func (c *chunk) download(ctx context.Context) error {
+	c.logger.Print("Downloading chunk", c.index, "from", c.start, "to", c.end, fmt.Sprintf("(~%d MB)", (c.end-c.start)/(1024*1024)))
+
 	defer c.wg.Done()
 	start := time.Now()
 
-	log.Println("a")
+	if c.start >= c.end {
+		return nil
+	}
+
 	srcFile, err := c.getDownloadFile(ctx)
 	if err != nil {
 		c.logger.Print("Error fetching chunk file:", err.Error())
 		return err
 	}
 	defer srcFile.Close()
-	log.Println("b")
 
 	dstFile, err := c.getSaveFile()
 	if err != nil {
@@ -119,16 +128,14 @@ func (c *chunk) download(ctx context.Context) error {
 		return err
 	}
 	defer dstFile.Close()
-	log.Println("c")
 
 	if _, err := io.Copy(dstFile, srcFile); err != nil {
 		c.logger.Print("Error downloading chunk:", err.Error())
 		return err
 	}
-	log.Println("d")
 
 	elapsed := time.Since(start)
-	c.logger.Print("Chunk", c.index+1, "downloaded in", elapsed.Seconds(), "s")
+	c.logger.Print("Chunk", c.index, "downloaded in", elapsed.Seconds(), "s")
 
 	return nil
 }
@@ -138,15 +145,17 @@ func (c *chunk) Execute(ctx context.Context) error {
 }
 
 func (c *chunk) OnError(ctx context.Context, err error) {
+	if c.Context().Err() != nil {
+		return
+	}
+
 	var e error
 	for i := 0; i < c.MaxRetry(); i++ {
 		c.wg.Add(1)
 		c.logger.Print("Error downloading file:", err.Error(), ". Retrying...")
 
-		//TODO: test this
 		if c.Resumable() {
-			chunkFile := filepath.Join(c.DownloadLocation(), fmt.Sprintf("%s-%d", c.ID(), c.index))
-			c.start += resumePosition(chunkFile)
+			c.start += resumePosition(c.path)
 		}
 
 		if e = c.download(ctx); e == nil {

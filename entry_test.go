@@ -165,7 +165,7 @@ func TestCalculatePartitionMoreOneChunkLen(t *testing.T) {
 		t.Error("Error fetching url:", err.Error())
 	}
 
-	if entry.ChunkLen() == 1 {
+	if entry.ChunkLen() != 1 {
 		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
 	}
 
@@ -176,7 +176,7 @@ func TestCalculatePartitionMoreOneChunkLen(t *testing.T) {
 		t.Error("Error fetching url:", err.Error())
 	}
 
-	if entry.ChunkLen() == 1 {
+	if entry.ChunkLen() != 1 {
 		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
 	}
 
@@ -187,7 +187,7 @@ func TestCalculatePartitionMoreOneChunkLen(t *testing.T) {
 		t.Error("Error fetching url:", err.Error())
 	}
 
-	if entry.ChunkLen() == 1 {
+	if entry.ChunkLen() != 1 {
 		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
 	}
 

@@ -58,6 +58,10 @@ func (dl *localDownloader) Download(entry Entry) error {
 
 	wg.Wait()
 
+	if entry.Context().Err() != nil {
+		return nil
+	}
+
 	// combining file
 	if err := dl.createFile(entry); err != nil {
 		dl.logger.Print("Error combining chunks:", err.Error())
@@ -73,7 +77,7 @@ func (dl *localDownloader) Download(entry Entry) error {
 var errUrlExpired = fmt.Errorf("link is expired")
 
 func (dl *localDownloader) Resume(entry Entry) error {
-	dl.logger.Print("Resuming download", entry.Name(), "...")
+	start := time.Now()
 
 	if entry.Expired() {
 		return errUrlExpired
@@ -84,13 +88,51 @@ func (dl *localDownloader) Resume(entry Entry) error {
 		return err
 	}
 
-	// basically, if it's not resumable we do nothing, because it is already handled by the chunk
-	// so we just perform download
+	dl.logger.Print("Resuming download", entry.Name(), "...")
+
 	if !entry.Resumable() {
-		dl.logger.Print(entry.Name(), "is not resumable. Restarting...")
+		dl.logger.Print(entry.Name(), "does not support resume download. Restarting...")
+		return dl.Download(entry)
 	}
 
-	return dl.Download(entry)
+	worker, err := NewWorker(entry.Context(), entry.ChunkLen(), entry.ChunkLen(), dl.Setting)
+	if err != nil {
+		dl.logger.Print("Error creating worker", err.Error())
+		return err
+	}
+
+	var wg sync.WaitGroup
+	worker.Start()
+	defer worker.Stop()
+
+	chunks := make([]*chunk, 0)
+	for i := 0; i < entry.ChunkLen(); i++ {
+		chunk := newChunk(entry, i, dl.Setting, &wg)
+		if file, err := os.Stat(chunk.path); err == nil && file.Size() == chunk.size {
+			continue
+		}
+
+		chunk.start += resumePosition(chunk.path)
+		chunks = append(chunks, chunk)
+	}
+
+	for _, chunk := range chunks {
+		wg.Add(1)
+		worker.Add(chunk)
+	}
+
+	wg.Wait()
+
+	// // combining file
+	if err := dl.createFile(entry); err != nil {
+		dl.logger.Print("Error combining chunks:", err.Error())
+		return err
+	}
+
+	elapsed := time.Since(start)
+	dl.logger.Print(entry.Name(), "resumed in", elapsed.Seconds(), "s")
+
+	return nil
 }
 
 func (dl *localDownloader) Restart(entry Entry) error {
@@ -130,23 +172,24 @@ func (dl *localDownloader) Watch(update OnProgress) {
 
 // createFile will combine chunks into single actual file
 func (dl *localDownloader) createFile(entry Entry) error {
-	filename := filepath.Join(dl.DownloadLocation(), entry.Name())
-
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.Create(entry.Location())
 	if err != nil {
 		dl.logger.Print("Error creating downloaded file:", err.Error())
 		return err
 	}
 
+	defer file.Close()
+
 	// if chunk len is 1, then just rename the chunk into entry filename
+	// we assume if the chunk len is 1, then it is not chunkable and unresumable
 	if entry.ChunkLen() == 1 {
 		chunkname := filepath.Join(dl.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), 0))
 		return os.Rename(chunkname, entry.Location())
 	}
 
 	for i := 0; i < entry.ChunkLen(); i++ {
-		tempFilename := filepath.Join(dl.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), i))
-		tmpFile, err := os.Open(tempFilename)
+		tmpFilename := filepath.Join(dl.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), i))
+		tmpFile, err := os.Open(tmpFilename)
 		if err != nil {
 			dl.logger.Print("Error opening downloaded chunk file:", err.Error())
 			return err
@@ -157,7 +200,7 @@ func (dl *localDownloader) createFile(entry Entry) error {
 			return err
 		}
 
-		if err := os.Remove(tempFilename); err != nil {
+		if err := os.Remove(tmpFilename); err != nil {
 			dl.logger.Print("Error removing temp file:", err.Error())
 			return err
 		}

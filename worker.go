@@ -58,16 +58,12 @@ func (w *worker) Start() {
 
 		for i := 0; i < w.poolsize; i++ {
 			go func(id int) {
-				w.logger.Print("Starting worker id", id+1)
-
 				for {
 					select {
 					case <-w.quit:
-						w.logger.Print("Stopping worker id", id+1, "with quit channel")
 						return
 					case job, ok := <-w.jobs:
 						if !ok {
-							w.logger.Print("Stopping worker id", id+1, "with closed channel")
 							return
 						}
 
