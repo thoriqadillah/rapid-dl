@@ -114,7 +114,6 @@ func TestStopDownloadLocalMultipleChunkSuccess(t *testing.T) {
 	}
 
 	downloader := NewDownloader(DownloaderDefault, DefaultSetting())
-	log.Println(entry)
 	if watcher, ok := downloader.(Watcher); ok {
 		watcher.Watch(func(i ...interface{}) {
 			log.Println(i)
@@ -149,7 +148,6 @@ func TestStopDownloadLocalResumeSuccess(t *testing.T) {
 		t.Error("Error fetching dummy video:", err.Error())
 	}
 
-	log.Println(entry)
 	downloader := NewDownloader(DownloaderDefault, DefaultSetting())
 	if watcher, ok := downloader.(Watcher); ok {
 		watcher.Watch(func(i ...interface{}) {

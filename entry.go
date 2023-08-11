@@ -158,7 +158,7 @@ func calculatePartition(size int64, setting Setting) int {
 
 	// dampening the total partition based on digit figures, e.g 100 -> 3 digits
 	for i := 0; i < int(total); i++ {
-		partsize *= int64(total)
+		partsize *= int64(total) + 1
 	}
 
 	return int(size / partsize)

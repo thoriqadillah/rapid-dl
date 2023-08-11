@@ -159,46 +159,32 @@ func TestCalculatePartitionOneChunkLen(t *testing.T) {
 
 func TestCalculatePartitionMoreOneChunkLen(t *testing.T) {
 	// 100 mb file
-	link := "https://www.sampledocs.in/DownloadFiles/SampleFile?filename=sampledocs-100mb-pdf-file&ext=pdf"
+	link := "https://www.learningcontainer.com/download/sample-video-file-for-testing/?wpdmdl=2514&refresh=64d1d136ca1db1691472182"
 	entry, err := Fetch(link, DefaultSetting())
 	if err != nil {
 		t.Error("Error fetching url:", err.Error())
 	}
 
-	if entry.ChunkLen() != 1 {
-		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
-	}
-
-	// 1 gb file
-	link = "https://bit.ly/1GB-testfile"
-	entry, err = Fetch(link, DefaultSetting())
-	if err != nil {
-		t.Error("Error fetching url:", err.Error())
-	}
-
-	if entry.ChunkLen() != 1 {
-		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
-	}
-
-	// 10 mb file
-	link = "https://www.sampledocs.in/DownloadFiles/SampleFile?filename=SampleDocs-Test%20PDF%20File%20With%20Dummy%20Data%20For%20Testing&ext=pdf"
-	entry, err = Fetch(link, DefaultSetting())
-	if err != nil {
-		t.Error("Error fetching url:", err.Error())
-	}
-
-	if entry.ChunkLen() != 1 {
-		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
-	}
-
-	// 50 mb file
-	link = "https://link.testfile.org/PDF50MB"
-	entry, err = Fetch(link, DefaultSetting())
-	if err != nil {
-		t.Error("Error fetching url:", err.Error())
+	if !entry.Resumable() {
+		t.Error("Entry is not resumable")
 	}
 
 	if entry.ChunkLen() == 1 {
-		t.Error("Chunk length expected to be one, but got", entry.ChunkLen())
+		t.Error("Chunk length expected to be more than one, but got", entry.ChunkLen())
+	}
+
+	// 50 mb file
+	link = "https://www.learningcontainer.com/download/sample-mp4-video-file/?wpdmdl=2516&refresh=64d1d13664bfa1691472182"
+	entry, err = Fetch(link, DefaultSetting())
+	if err != nil {
+		t.Error("Error fetching url:", err.Error())
+	}
+
+	if !entry.Resumable() {
+		t.Error("Entry is not resumable")
+	}
+
+	if entry.ChunkLen() == 1 {
+		t.Error("Chunk length expected to be more than one, but got", entry.ChunkLen())
 	}
 }
