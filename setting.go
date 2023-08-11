@@ -13,9 +13,6 @@ type (
 		// location where the data for this application will be stored
 		DataLocation() string
 
-		// max number of file will be downloaded at the same time
-		MaxConcurrentDownload() int
-
 		// max retry will be executed when there is an Error downloading
 		MaxRetry() int
 
@@ -24,15 +21,17 @@ type (
 
 		// minimum size in MB for a chunk
 		MinChunkSize() int64
+
+		HttpClient() string
 	}
 
 	setting struct {
-		downloadLocation      string
-		dataLocation          string
-		maxConcurrentDownload int
-		maxRetry              int
-		loggerProvider        string
-		minChunkSize          int64
+		downloadLocation string
+		dataLocation     string
+		maxRetry         int
+		loggerProvider   string
+		minChunkSize     int64
+		httpClient       string
 	}
 )
 
@@ -46,12 +45,11 @@ func DefaultSetting() Setting {
 	os.MkdirAll(data, os.ModePerm)
 
 	return &setting{
-		downloadLocation:      download,
-		dataLocation:          data,
-		maxConcurrentDownload: 4,
-		maxRetry:              3,
-		loggerProvider:        LoggerStdOut,
-		minChunkSize:          1024 * 1024 * 5, // 5 MB
+		downloadLocation: download,
+		dataLocation:     data,
+		maxRetry:         3,
+		loggerProvider:   LoggerStdOut,
+		minChunkSize:     1024 * 1024 * 5, // 5 MB
 	}
 }
 
@@ -61,10 +59,6 @@ func (s *setting) DownloadLocation() string {
 
 func (s *setting) DataLocation() string {
 	return s.dataLocation
-}
-
-func (s *setting) MaxConcurrentDownload() int {
-	return s.maxConcurrentDownload
 }
 
 func (s *setting) MaxRetry() int {
@@ -77,4 +71,8 @@ func (s *setting) LoggerProvider() string {
 
 func (s *setting) MinChunkSize() int64 {
 	return s.minChunkSize
+}
+
+func (s *setting) HttpClient() string {
+	return s.httpClient
 }

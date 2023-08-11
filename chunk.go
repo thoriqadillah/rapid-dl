@@ -180,7 +180,7 @@ func (c *chunk) getDownloadFile(ctx context.Context) (io.ReadCloser, error) {
 	bytesRange := fmt.Sprintf("bytes=%d-%d", c.start, c.end)
 	req.Header.Add("Range", bytesRange)
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := HttpClient(c.Setting.HttpClient()).Do(req)
 	if err != nil {
 		c.logger.Print("Error fething chunk body:", err.Error())
 		return nil, err
