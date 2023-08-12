@@ -11,12 +11,12 @@ import (
 
 func TestDownloadLocalOneChunkSuccess(t *testing.T) {
 	url := "https://www.sampledocs.in/DownloadFiles/SampleFile?filename=SampleDocs-Test%20PDF%20File%20With%20Dummy%20Data%20For%20Testing&ext=pdf"
-	entry, err := Fetch(url, DefaultSetting())
+	entry, err := Fetch(url)
 	if err != nil {
 		t.Error("Error fetching dummy video:", err.Error())
 	}
 
-	downloader := NewDownloader(DownloaderDefault, DefaultSetting())
+	downloader := NewDownloader(DownloaderDefault)
 	if watcher, ok := downloader.(Watcher); ok {
 		watcher.Watch(func(i ...interface{}) {
 			log.Println(i)
@@ -41,12 +41,12 @@ func TestDownloadLocalOneChunkSuccess(t *testing.T) {
 
 func TestDownloadLocalMultipleChunkSuccess(t *testing.T) {
 	url := "https://link.testfile.org/PDF50MB"
-	entry, err := Fetch(url, DefaultSetting())
+	entry, err := Fetch(url)
 	if err != nil {
 		t.Error("Error fetching dummy video:", err.Error())
 	}
 
-	downloader := NewDownloader(DownloaderDefault, DefaultSetting())
+	downloader := NewDownloader(DownloaderDefault)
 	if err := downloader.Download(entry); err != nil {
 		t.Error("Error downloading dummy video:", err.Error())
 	}
@@ -72,13 +72,12 @@ func TestDownloadLocalMultipleChunkSuccess(t *testing.T) {
 func TestStopDownloadLocalOneChunkSuccess(t *testing.T) {
 	url := "https://www.sampledocs.in/DownloadFiles/SampleFile?filename=SampleDocs-Test%20PDF%20File%20With%20Dummy%20Data%20For%20Testing&ext=pdf"
 
-	setting := DefaultSetting()
-	entry, err := Fetch(url, setting)
+	entry, err := Fetch(url)
 	if err != nil {
 		t.Error("Error fetching dummy video:", err.Error())
 	}
 
-	downloader := NewDownloader(DownloaderDefault, setting)
+	downloader := NewDownloader(DownloaderDefault)
 	if watcher, ok := downloader.(Watcher); ok {
 		watcher.Watch(func(i ...interface{}) {
 			log.Println(i)
@@ -97,6 +96,8 @@ func TestStopDownloadLocalOneChunkSuccess(t *testing.T) {
 		t.Error("Error stopping download:", err.Error())
 	}
 
+	setting := DefaultSetting()
+
 	for i := 0; i < entry.ChunkLen(); i++ {
 		chunkfile := filepath.Join(setting.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), i))
 		if err := os.Remove(chunkfile); err != nil {
@@ -107,13 +108,12 @@ func TestStopDownloadLocalOneChunkSuccess(t *testing.T) {
 
 func TestStopDownloadLocalMultipleChunkSuccess(t *testing.T) {
 	url := "https://link.testfile.org/PDF50MB"
-	setting := DefaultSetting()
-	entry, err := Fetch(url, setting)
+	entry, err := Fetch(url)
 	if err != nil {
 		t.Error("Error fetching dummy video:", err.Error())
 	}
 
-	downloader := NewDownloader(DownloaderDefault, DefaultSetting())
+	downloader := NewDownloader(DownloaderDefault)
 	if watcher, ok := downloader.(Watcher); ok {
 		watcher.Watch(func(i ...interface{}) {
 			log.Println(i)
@@ -132,6 +132,8 @@ func TestStopDownloadLocalMultipleChunkSuccess(t *testing.T) {
 		t.Error("Error stopping download:", err.Error())
 	}
 
+	setting := DefaultSetting()
+
 	for i := 0; i < entry.ChunkLen(); i++ {
 		chunkfile := filepath.Join(setting.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), i))
 		if err := os.Remove(chunkfile); err != nil {
@@ -142,13 +144,12 @@ func TestStopDownloadLocalMultipleChunkSuccess(t *testing.T) {
 
 func TestStopDownloadLocalResumeSuccess(t *testing.T) {
 	url := "https://link.testfile.org/PDF50MB"
-	setting := DefaultSetting()
-	entry, err := Fetch(url, setting)
+	entry, err := Fetch(url)
 	if err != nil {
 		t.Error("Error fetching dummy video:", err.Error())
 	}
 
-	downloader := NewDownloader(DownloaderDefault, DefaultSetting())
+	downloader := NewDownloader(DownloaderDefault)
 	if watcher, ok := downloader.(Watcher); ok {
 		watcher.Watch(func(i ...interface{}) {
 			log.Println(i)

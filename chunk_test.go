@@ -6,7 +6,7 @@ import (
 
 func TestChunkRangeOneChunkLen(t *testing.T) {
 	link := "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-	entry, err := Fetch(link, DefaultSetting())
+	entry, err := Fetch(link)
 	if err != nil {
 		t.Error("Error fetching url:", err.Error())
 	}

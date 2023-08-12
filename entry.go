@@ -52,11 +52,18 @@ type (
 	}
 
 	entryOption struct {
+		setting Setting
 		cookies []*http.Cookie
 	}
 
 	EntryOptions func(o *entryOption)
 )
+
+func SetEntrySetting(setting Setting) EntryOptions {
+	return func(o *entryOption) {
+		o.setting = setting
+	}
+}
 
 func AddCookies(cookies []*http.Cookie) EntryOptions {
 	return func(o *entryOption) {
@@ -184,13 +191,16 @@ func calculatePartition(size int64, setting Setting) int {
 
 }
 
-func Fetch(url string, setting Setting, options ...EntryOptions) (Entry, error) {
-	opt := &entryOption{}
+func Fetch(url string, options ...EntryOptions) (Entry, error) {
+	opt := &entryOption{
+		setting: DefaultSetting(),
+	}
+
 	for _, option := range options {
 		option(opt)
 	}
 
-	logger := NewLogger(setting)
+	logger := NewLogger(opt.setting)
 	logger.Print("Fetching url...")
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -210,10 +220,10 @@ func Fetch(url string, setting Setting, options ...EntryOptions) (Entry, error) 
 
 	resumable := resumable(res)
 	filename := handleDuplicate(filename(res))
-	location := filepath.Join(setting.DownloadLocation(), filename)
+	location := filepath.Join(opt.setting.DownloadLocation(), filename)
 	filetype := filetype(filename)
 	ctx, cancel := context.WithCancel(context.Background())
-	chunklen := calculatePartition(res.ContentLength, setting)
+	chunklen := calculatePartition(res.ContentLength, opt.setting)
 
 	if !resumable {
 		chunklen = 1

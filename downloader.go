@@ -15,24 +15,44 @@ type (
 		Watch(update OnProgress)
 	}
 
-	// DownloaderFunc is an abstract for creating a Downloader
-	DownloaderFunc func(s Setting) Downloader
+	// DownloaderFactory is an abstract for creating a Downloader
+	DownloaderFactory func(o *downloaderOption) Downloader
 
 	OnProgress func(...interface{})
+
+	downloaderOption struct {
+		setting Setting
+	}
+
+	DownloaderOptions func(o *downloaderOption)
 )
 
-var downloadermap = make(map[string]DownloaderFunc)
+func SetDownloaderSetting(setting Setting) DownloaderOptions {
+	return func(o *downloaderOption) {
+		o.setting = setting
+	}
+}
 
-func NewDownloader(provider string, setting Setting) Downloader {
+var downloadermap = make(map[string]DownloaderFactory)
+
+func NewDownloader(provider string, options ...DownloaderOptions) Downloader {
+	opt := &downloaderOption{
+		setting: DefaultSetting(),
+	}
+
+	for _, option := range options {
+		option(opt)
+	}
+
 	downloader, ok := downloadermap[provider]
 	if !ok {
 		log.Panicf("Provider %s is not implemented", provider)
 		return nil
 	}
 
-	return downloader(setting)
+	return downloader(opt)
 }
 
-func RegisterDownloader(name string, impl DownloaderFunc) {
+func RegisterDownloader(name string, impl DownloaderFactory) {
 	downloadermap[name] = impl
 }

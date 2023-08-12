@@ -147,7 +147,7 @@ func TestResumableError(t *testing.T) {
 func TestCalculatePartitionOneChunkLen(t *testing.T) {
 	// 10 mb file, but has no header to get the desired data
 	link := "https://cartographicperspectives.org/index.php/journal/article/view/cp13-full/pdf"
-	entry, err := Fetch(link, DefaultSetting())
+	entry, err := Fetch(link)
 	if err != nil {
 		t.Error("Error fetching url:", err.Error())
 	}
@@ -160,7 +160,7 @@ func TestCalculatePartitionOneChunkLen(t *testing.T) {
 func TestCalculatePartitionMoreOneChunkLen(t *testing.T) {
 	// 100 mb file
 	link := "https://www.learningcontainer.com/download/sample-video-file-for-testing/?wpdmdl=2514&refresh=64d1d136ca1db1691472182"
-	entry, err := Fetch(link, DefaultSetting())
+	entry, err := Fetch(link)
 	if err != nil {
 		t.Error("Error fetching url:", err.Error())
 	}
@@ -175,7 +175,7 @@ func TestCalculatePartitionMoreOneChunkLen(t *testing.T) {
 
 	// 50 mb file
 	link = "https://www.learningcontainer.com/download/sample-mp4-video-file/?wpdmdl=2516&refresh=64d1d13664bfa1691472182"
-	entry, err = Fetch(link, DefaultSetting())
+	entry, err = Fetch(link)
 	if err != nil {
 		t.Error("Error fetching url:", err.Error())
 	}

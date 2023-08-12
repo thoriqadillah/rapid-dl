@@ -25,7 +25,7 @@ type (
 		HttpClient() string
 	}
 
-	setting struct {
+	settings struct {
 		downloadLocation string
 		dataLocation     string
 		maxRetry         int
@@ -44,7 +44,7 @@ func DefaultSetting() Setting {
 
 	os.MkdirAll(data, os.ModePerm)
 
-	return &setting{
+	return &settings{
 		downloadLocation: download,
 		dataLocation:     data,
 		maxRetry:         3,
@@ -53,26 +53,26 @@ func DefaultSetting() Setting {
 	}
 }
 
-func (s *setting) DownloadLocation() string {
+func (s *settings) DownloadLocation() string {
 	return s.downloadLocation
 }
 
-func (s *setting) DataLocation() string {
+func (s *settings) DataLocation() string {
 	return s.dataLocation
 }
 
-func (s *setting) MaxRetry() int {
+func (s *settings) MaxRetry() int {
 	return s.maxRetry
 }
 
-func (s *setting) LoggerProvider() string {
+func (s *settings) LoggerProvider() string {
 	return s.loggerProvider
 }
 
-func (s *setting) MinChunkSize() int64 {
+func (s *settings) MinChunkSize() int64 {
 	return s.minChunkSize
 }
 
-func (s *setting) HttpClient() string {
+func (s *settings) HttpClient() string {
 	return s.httpClient
 }

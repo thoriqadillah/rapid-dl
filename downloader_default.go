@@ -18,10 +18,10 @@ type localDownloader struct {
 
 var DownloaderDefault = "default"
 
-func newLocalDownloader(setting Setting) Downloader {
+func newLocalDownloader(opt *downloaderOption) Downloader {
 	return &localDownloader{
-		setting: setting,
-		logger:  NewLogger(setting),
+		setting: opt.setting,
+		logger:  NewLogger(opt.setting),
 	}
 }
 
