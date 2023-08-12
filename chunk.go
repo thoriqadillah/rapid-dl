@@ -47,8 +47,8 @@ func (r *progressBar) Close() error {
 }
 
 type chunk struct {
-	Entry
-	Setting
+	entry      Entry
+	setting    Setting
 	wg         *sync.WaitGroup
 	path       string
 	index      int
@@ -93,8 +93,8 @@ func newChunk(entry Entry, index int, setting Setting, wg *sync.WaitGroup) *chun
 
 	return &chunk{
 		path:       filepath.Join(setting.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), index)),
-		Entry:      entry,
-		Setting:    setting,
+		entry:      entry,
+		setting:    setting,
 		wg:         wg,
 		index:      index,
 		start:      start,
@@ -145,16 +145,16 @@ func (c *chunk) Execute(ctx context.Context) error {
 }
 
 func (c *chunk) OnError(ctx context.Context, err error) {
-	if c.Context().Err() != nil {
+	if c.entry.Context().Err() != nil {
 		return
 	}
 
 	var e error
-	for i := 0; i < c.MaxRetry(); i++ {
+	for i := 0; i < c.setting.MaxRetry(); i++ {
 		c.wg.Add(1)
 		c.logger.Print("Error downloading file:", err.Error(), ". Retrying...")
 
-		if c.Resumable() {
+		if c.entry.Resumable() {
 			c.start += resumePosition(c.path)
 		}
 
@@ -171,7 +171,7 @@ func (c *chunk) onProgress(onprogress OnProgress) {
 }
 
 func (c *chunk) getDownloadFile(ctx context.Context) (io.ReadCloser, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", c.URL(), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", c.entry.URL(), nil)
 	if err != nil {
 		c.logger.Print("Error creating chunk request:", err.Error())
 		return nil, err
@@ -180,7 +180,13 @@ func (c *chunk) getDownloadFile(ctx context.Context) (io.ReadCloser, error) {
 	bytesRange := fmt.Sprintf("bytes=%d-%d", c.start, c.end)
 	req.Header.Add("Range", bytesRange)
 
-	res, err := HttpClient(c.Setting.HttpClient()).Do(req)
+	if entryCookie, ok := c.entry.(EntryCookies); ok && len(entryCookie.Cookies()) > 0 {
+		for _, cookie := range entryCookie.Cookies() {
+			req.AddCookie(cookie)
+		}
+	}
+
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		c.logger.Print("Error fething chunk body:", err.Error())
 		return nil, err
@@ -189,7 +195,7 @@ func (c *chunk) getDownloadFile(ctx context.Context) (io.ReadCloser, error) {
 	progressBar := &progressBar{
 		onprogress: c.onprogress,
 		reader:     res.Body,
-		Entry:      c.Entry,
+		Entry:      c.entry,
 		index:      c.index,
 		downloaded: 0,
 		progress:   0,
@@ -200,7 +206,7 @@ func (c *chunk) getDownloadFile(ctx context.Context) (io.ReadCloser, error) {
 }
 
 func (c *chunk) getSaveFile() (io.WriteCloser, error) {
-	tmpFilename := filepath.Join(c.DownloadLocation(), fmt.Sprintf("%s-%d", c.ID(), c.index))
+	tmpFilename := filepath.Join(c.setting.DownloadLocation(), fmt.Sprintf("%s-%d", c.entry.ID(), c.index))
 	file, err := os.OpenFile(tmpFilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		c.logger.Print("Error creating or appending file:", err.Error())

@@ -11,7 +11,7 @@ import (
 
 // downloader that save the result into local file
 type localDownloader struct {
-	Setting
+	setting    Setting
 	logger     Logger
 	onprogress OnProgress
 }
@@ -20,7 +20,7 @@ var DownloaderDefault = "default"
 
 func newLocalDownloader(setting Setting) Downloader {
 	return &localDownloader{
-		Setting: setting,
+		setting: setting,
 		logger:  NewLogger(setting),
 	}
 }
@@ -32,7 +32,7 @@ func (dl *localDownloader) Download(entry Entry) error {
 		return errUrlExpired
 	}
 
-	worker, err := NewWorker(entry.Context(), entry.ChunkLen(), entry.ChunkLen(), dl.Setting)
+	worker, err := NewWorker(entry.Context(), entry.ChunkLen(), entry.ChunkLen(), dl.setting)
 	if err != nil {
 		dl.logger.Print("Error creating worker", err.Error())
 		return err
@@ -44,7 +44,7 @@ func (dl *localDownloader) Download(entry Entry) error {
 
 	chunks := make([]*chunk, entry.ChunkLen())
 	for i := 0; i < entry.ChunkLen(); i++ {
-		chunks[i] = newChunk(entry, i, dl.Setting, &wg)
+		chunks[i] = newChunk(entry, i, dl.setting, &wg)
 
 		if dl.onprogress != nil {
 			chunks[i].onProgress(dl.onprogress)
@@ -95,7 +95,7 @@ func (dl *localDownloader) Resume(entry Entry) error {
 		return dl.Download(entry)
 	}
 
-	worker, err := NewWorker(entry.Context(), entry.ChunkLen(), entry.ChunkLen(), dl.Setting)
+	worker, err := NewWorker(entry.Context(), entry.ChunkLen(), entry.ChunkLen(), dl.setting)
 	if err != nil {
 		dl.logger.Print("Error creating worker", err.Error())
 		return err
@@ -107,7 +107,7 @@ func (dl *localDownloader) Resume(entry Entry) error {
 
 	chunks := make([]*chunk, 0)
 	for i := 0; i < entry.ChunkLen(); i++ {
-		chunk := newChunk(entry, i, dl.Setting, &wg)
+		chunk := newChunk(entry, i, dl.setting, &wg)
 		if file, err := os.Stat(chunk.path); err == nil && file.Size() == chunk.size {
 			continue
 		}
@@ -149,7 +149,7 @@ func (dl *localDownloader) Restart(entry Entry) error {
 
 	// remove the downloaded chunk if any
 	for i := 0; i < entry.ChunkLen(); i++ {
-		chunkFile := filepath.Join(dl.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), i))
+		chunkFile := filepath.Join(dl.setting.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), i))
 		if err := os.Remove(chunkFile); err != nil {
 			return err
 		}
@@ -183,12 +183,12 @@ func (dl *localDownloader) createFile(entry Entry) error {
 	// if chunk len is 1, then just rename the chunk into entry filename
 	// we assume if the chunk len is 1, then it is not chunkable and unresumable
 	if entry.ChunkLen() == 1 {
-		chunkname := filepath.Join(dl.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), 0))
+		chunkname := filepath.Join(dl.setting.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), 0))
 		return os.Rename(chunkname, entry.Location())
 	}
 
 	for i := 0; i < entry.ChunkLen(); i++ {
-		tmpFilename := filepath.Join(dl.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), i))
+		tmpFilename := filepath.Join(dl.setting.DownloadLocation(), fmt.Sprintf("%s-%d", entry.ID(), i))
 		tmpFile, err := os.Open(tmpFilename)
 		if err != nil {
 			dl.logger.Print("Error opening downloaded chunk file:", err.Error())

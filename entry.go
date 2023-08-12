@@ -16,33 +16,52 @@ import (
 	"time"
 )
 
-type Entry interface {
-	ID() string
-	Name() string
-	Location() string
-	Size() int64
-	Type() string  // document, compressed, audio, video, image, other, etc
-	URL() string   // url which the entry downloaded from
-	ChunkLen() int // total chunks splitted into
-	Resumable() bool
-	Context() context.Context
-	Cancel()
-	Expired() bool
-	Refresh() error
-}
+type (
+	Entry interface {
+		ID() string
+		Name() string
+		Location() string
+		Size() int64
+		Type() string  // document, compressed, audio, video, image, other, etc
+		URL() string   // url which the entry downloaded from
+		ChunkLen() int // total chunks splitted into
+		Resumable() bool
+		Context() context.Context
+		Cancel()
+		Expired() bool
+		Refresh() error
+	}
 
-type entry struct {
-	id        string
-	name      string
-	location  string
-	size      int64
-	filetype  string
-	url       string
-	resumable bool
-	chunkLen  int
-	logger    Logger
-	ctx       context.Context
-	cancel    context.CancelFunc
+	EntryCookies interface {
+		Cookies() []*http.Cookie
+	}
+
+	entry struct {
+		id        string
+		name      string
+		location  string
+		size      int64
+		filetype  string
+		url       string
+		resumable bool
+		chunkLen  int
+		logger    Logger
+		ctx       context.Context
+		cancel    context.CancelFunc
+		cookies   []*http.Cookie
+	}
+
+	entryOption struct {
+		cookies []*http.Cookie
+	}
+
+	EntryOptions func(o *entryOption)
+)
+
+func AddCookies(cookies []*http.Cookie) EntryOptions {
+	return func(o *entryOption) {
+		o.cookies = cookies
+	}
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -165,22 +184,36 @@ func calculatePartition(size int64, setting Setting) int {
 
 }
 
-func Fetch(url string, setting Setting) (Entry, error) {
+func Fetch(url string, setting Setting, options ...EntryOptions) (Entry, error) {
+	opt := &entryOption{}
+	for _, option := range options {
+		option(opt)
+	}
+
 	logger := NewLogger(setting)
 	logger.Print("Fetching url...")
 
-	req, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		logger.Print("Error fetching url", err.Error())
+		logger.Print("Error preparing request:", err.Error())
 		return nil, err
 	}
 
-	resumable := resumable(req)
-	filename := handleDuplicate(filename(req))
+	for _, cookie := range opt.cookies {
+		req.AddCookie(cookie)
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		logger.Print("Error fetching url:", err.Error())
+	}
+
+	resumable := resumable(res)
+	filename := handleDuplicate(filename(res))
 	location := filepath.Join(setting.DownloadLocation(), filename)
 	filetype := filetype(filename)
 	ctx, cancel := context.WithCancel(context.Background())
-	chunklen := calculatePartition(req.ContentLength, setting)
+	chunklen := calculatePartition(res.ContentLength, setting)
 
 	if !resumable {
 		chunklen = 1
@@ -191,13 +224,14 @@ func Fetch(url string, setting Setting) (Entry, error) {
 		name:      filename,
 		location:  location,
 		filetype:  filetype,
-		url:       req.Request.URL.String(),
+		url:       url,
 		size:      req.ContentLength,
 		logger:    logger,
 		chunkLen:  chunklen,
 		ctx:       ctx,
 		cancel:    cancel,
 		resumable: resumable,
+		cookies:   opt.cookies,
 	}, nil
 }
 
@@ -242,13 +276,25 @@ func (e *entry) Cancel() {
 }
 
 func (e *entry) Expired() bool {
-	resp, err := http.Head(e.url)
+	req, err := http.NewRequest("HEAD", e.url, nil)
+
+	if len(e.cookies) > 0 {
+		for _, cookie := range e.cookies {
+			req.AddCookie(cookie)
+		}
+	}
+
 	if err != nil {
-		e.logger.Print("Error checking url expiration:", err.Error())
+		e.logger.Print("Could not prepare for checking url expiration:", err.Error())
 		return true
 	}
 
-	return resp.StatusCode != http.StatusOK && resp.ContentLength <= 0
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		e.logger.Print("Error checking url expiration:", err.Error())
+	}
+
+	return res.StatusCode != http.StatusOK && res.ContentLength <= 0
 }
 
 func (e *entry) Refresh() error {
@@ -272,4 +318,8 @@ func (e *entry) String() string {
 	buffer.WriteString(fmt.Sprintf("Expired: %v\n", e.Expired()))
 
 	return buffer.String()
+}
+
+func (e *entry) Cookies() []*http.Cookie {
+	return e.cookies
 }
