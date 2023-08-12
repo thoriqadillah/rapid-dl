@@ -225,7 +225,7 @@ func Fetch(url string, setting Setting, options ...EntryOptions) (Entry, error) 
 		location:  location,
 		filetype:  filetype,
 		url:       url,
-		size:      req.ContentLength,
+		size:      res.ContentLength,
 		logger:    logger,
 		chunkLen:  chunklen,
 		ctx:       ctx,
